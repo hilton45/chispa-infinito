@@ -94,3 +94,12 @@ Este documento registra todas las decisiones arquitectónicas, de diseño y de b
 - **Decisión:**
   - Sustituir el bucle de actualización de partículas en CPU por un sistema de `50.000` partículas en GPU (`topology: 'point-list'` en `EffectsLayer.ts`) dividido en `44.000` partículas permanentes de polvo orbital/cósmico (cuya órbita kepleriana inclinada, turbulencia armónica y colapso en el Big Bang se evalúan de forma analítica en el *vertex shader* con `0` coste de CPU) y un *ring buffer* de `6.000` ranuras para ráfagas de clic, hitos y estelas de cometas con integración analítica de rozamiento ($x(t) = x_0 + v_0 (1 - e^{-kt})/k$).
   - Ampliar `SkyLayer.ts` a 4 capas de nebulosa con desenfoque progresivo por profundidad (de 2 a 5 octavas FBM y absorción oscura de Beer-Lambert), galaxias espirales y elípticas lejanas procedurales en el campo profundo, `270` estrellas con temperatura de color de cuerpo negro (`3.200 K` a `25.000 K`), destellos de difracción de 4/6 puntas en las más brillantes y estrellas fugaces ocasionales.
+
+---
+
+## ADR 010 · Fase G6 (v1.1): Cinemática de Big Bang con Cámara Lenta, Onda de Choque en Pantalla y Transiciones de Era
+- **Fecha:** Fase G6 (`v1.1.0`)
+- **Estado:** Aprobado
+- **Decisión:**
+  - Ampliar la secuencia cinemática del Big Bang a `6,0 s` con pivote de cámara centrado en el núcleo (`worldContainer.pivot`), zoom progresivo hasta `1.38×`, contracción orbital y de las `50.000` partículas hacia la singularidad, ventana de **cámara lenta (`sceneTimeScale = 0.3` durante `1,5 s`)**, sobreexposición con *god rays*, **distorsión de onda de choque en espacio de pantalla** (`triggerShockwaveDistortion`), destello HDR y renacimiento con retroceso suave de cámara.
+  - Enriquecer los cambios de era (pulso de bloom + distorsión radial + transición de color de `3,0 s`) y los hitos/cometas (estela de partículas GPU, destello de lente anamórfico en cruz y sacudida suave de cámara que respeta `prefers-reduced-motion`).

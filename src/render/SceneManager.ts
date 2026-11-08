@@ -37,9 +37,12 @@ export class SceneManager {
   private cameraZoom = 1.0;
   private targetCameraZoom = 1.0;
 
-  // Big Bang cinematic sequence
-  private bigBangSequenceTimer = 0; // > 0 when playing Big Bang animation
+  // Big Bang cinematic sequence (6.0 s total: zoom + implosion + 1.5 s slow-motion + shockwave distortion + flash + pull-back rebirth)
+  private bigBangSequenceTimer = 0;
   private bigBangImplosion = 0;
+  private bigBangStateResetDone = false;
+  private bigBangDistortionTriggered = false;
+  public sceneTimeScale = 1.0;
   private onBigBangCompleteCallback?: () => void;
 
   // Pointer parallax
@@ -186,7 +189,14 @@ export class SceneManager {
           duration: caughtComet.duration,
           name: caughtComet.name,
         });
+        const w = Math.max(1, this.app.screen.width);
+        const h = Math.max(1, this.app.screen.height);
         this.postProcess.triggerChromaticPulse(0.004);
+        this.postProcess.triggerEraBloomPulse();
+        this.postProcess.triggerShockwaveDistortion(px / w, py / h, 0.010, 0.75);
+        if (!this.quality.reduceMotion) {
+          this.shakeIntensity = 4.5;
+        }
         this.onCometCaught?.(caughtComet, px, py, res.description);
         return;
       }
@@ -228,25 +238,32 @@ export class SceneManager {
           this.shakeIntensity = 6.0;
         }
       } else if (event === 'era_change') {
+        const w = Math.max(1, this.app.screen.width);
+        const h = Math.max(1, this.app.screen.height);
         const newEra = data.newEra;
         this.startHue = this.currentHue;
         this.targetHue = newEra.hue;
         this.hueLerpTimer = 0;
-        this.targetCameraZoom = 1.04;
+        this.targetCameraZoom = 1.06;
         setTimeout(() => {
-          this.targetCameraZoom = 1.0;
-        }, 1400);
-        this.postProcess.triggerChromaticPulse(0.004);
+          if (this.bigBangSequenceTimer <= 0) {
+            this.targetCameraZoom = 1.0;
+          }
+        }, 1600);
+        this.postProcess.triggerChromaticPulse(0.005);
         this.postProcess.triggerEraBloomPulse();
+        this.postProcess.triggerShockwaveDistortion(cx / w, cy / h, 0.014, 1.05);
       }
     });
   }
 
   /**
-   * Play cinematic Big Bang implosion -> flash -> rebirth sequence.
+   * Play cinematic Big Bang implosion -> slow-motion -> shockwave distortion -> flash -> pull-back rebirth sequence (6.0 s).
    */
   public playBigBangCinematic(onComplete: () => void): void {
-    this.bigBangSequenceTimer = 2.4;
+    this.bigBangSequenceTimer = 6.0;
+    this.bigBangStateResetDone = false;
+    this.bigBangDistortionTriggered = false;
     this.onBigBangCompleteCallback = onComplete;
   }
 
@@ -273,10 +290,13 @@ export class SceneManager {
   public update(dt: number): void {
     if (document.visibilityState === 'hidden') return;
 
-    this.elapsedSeconds += dt;
     this.quality.update(dt);
     const profile = this.quality.getProfile();
     this.effectsLayer.setMaxParticles(profile.maxParticles);
+
+    const { cx, cy, minSide } = this.getSceneCenter();
+    const w = Math.max(1, this.app.screen.width);
+    const h = Math.max(1, this.app.screen.height);
 
     // 1. Era Hue 3-second smooth transition
     if (this.hueLerpTimer < 3.0) {
@@ -295,30 +315,63 @@ export class SceneManager {
       }
     }
 
-    // 2. Big Bang Cinematic sequence handling
+    // 2. Big Bang Cinematic sequence handling (6.0 s total)
+    this.sceneTimeScale = 1.0;
     if (this.bigBangSequenceTimer > 0) {
       this.bigBangSequenceTimer -= dt;
-      if (this.bigBangSequenceTimer > 0.9) {
-        // Implosion phase (2.4 -> 0.9)
-        const p = 1 - (this.bigBangSequenceTimer - 0.9) / 1.5;
+      if (this.bigBangSequenceTimer > 4.2) {
+        // Phase 1 (0.0 s -> 1.8 s): Camera zoom to core, orbital implosion, 1.5 s slow-motion (timeScale x 0.3), overexposure & god rays
+        const elapsedInPhase = 6.0 - this.bigBangSequenceTimer;
+        const p = Math.min(1.0, elapsedInPhase / 1.8);
         this.bigBangImplosion = p * p;
-        this.postProcess.triggerChromaticPulse(0.006 * p);
+        this.targetCameraZoom = this.quality.reduceMotion ? 1.0 : 1.0 + 0.38 * p;
+
+        // 1.5 s slow-motion window (from 0.3 s to 1.8 s)
+        if (elapsedInPhase >= 0.3) {
+          this.sceneTimeScale = 0.3;
+        }
+
+        // Overexposure with god rays & pre-detonation shockwave distortion
+        this.sparkCore.triggerClickKick();
+        this.postProcess.triggerChromaticPulse(0.008 * p);
+        if (elapsedInPhase >= 0.5 && !this.bigBangDistortionTriggered) {
+          this.bigBangDistortionTriggered = true;
+          this.postProcess.triggerEraBloomPulse();
+          this.postProcess.triggerShockwaveDistortion(cx / w, cy / h, 0.022, 1.25);
+        }
+      } else if (!this.bigBangStateResetDone) {
+        // Phase 2 (1.8 s climax): Singularity detonation, screen-space shockwave distortion, white-hot flash & universe rebirth
+        this.bigBangStateResetDone = true;
+        this.bigBangImplosion = 0;
+        this.sceneTimeScale = 1.0;
+        this.postProcess.triggerFlash(1.0);
+        this.postProcess.triggerEraBloomPulse();
+        this.postProcess.triggerChromaticPulse(0.010);
+        this.postProcess.triggerShockwaveDistortion(cx / w, cy / h, 0.028, 1.45);
+        this.effectsLayer.spawnBurst(cx, cy, 240, 0xffffff, 480, 1.6, 4.2);
+        this.effectsLayer.spawnShockwave(cx, cy, minSide * 0.92, 0xffffff, 1.35, 5.5);
+        this.effectsLayer.spawnShockwave(cx, cy, minSide * 0.65, 0x38bdf8, 1.05, 3.8);
+        if (!this.quality.reduceMotion) {
+          this.shakeIntensity = 11.0;
+        }
+        this.onBigBangCompleteCallback?.();
+        this.onBigBangCompleteCallback = undefined;
       } else if (this.bigBangSequenceTimer > 0) {
-        // Explosion & Rebirth flash phase
-        if (this.bigBangImplosion > 0) {
-          this.bigBangImplosion = 0;
-          this.postProcess.triggerFlash(1.0);
-          this.postProcess.triggerChromaticPulse(0.008);
-          const { cx, cy, minSide } = this.getSceneCenter();
-          this.effectsLayer.spawnBurst(cx, cy, 120, 0xffffff, 420, 1.4, 3.8);
-          this.effectsLayer.spawnShockwave(cx, cy, minSide * 0.85, 0xffffff, 1.2, 5.0);
-          this.onBigBangCompleteCallback?.();
-          this.onBigBangCompleteCallback = undefined;
+        // Phase 3 (1.8 s -> 6.0 s): Rebirth with camera pulling back smoothly
+        this.bigBangImplosion = 0;
+        if (this.bigBangSequenceTimer > 2.1) {
+          this.targetCameraZoom = this.quality.reduceMotion ? 1.0 : 0.95;
+        } else {
+          this.targetCameraZoom = 1.0;
         }
       } else {
         this.bigBangImplosion = 0;
+        this.targetCameraZoom = 1.0;
       }
     }
+
+    const effectiveDt = dt * this.sceneTimeScale;
+    this.elapsedSeconds += effectiveDt;
 
     // 3. Comet automatic spawner (every 50-110s, faster with dm_comet_magnet)
     this.cometSpawnTimer += dt;
@@ -329,10 +382,9 @@ export class SceneManager {
       this.forceSpawnComet();
     }
 
-    const { cx, cy, minSide } = this.getSceneCenter();
     this.sparkCore.container.position.set(cx, cy);
 
-    // 4. Camera micro-shake & zoom
+    // 4. Camera micro-shake & zoom pivoted around scene center
     let offsetX = 0;
     let offsetY = 0;
     if (this.shakeIntensity > 0.1 && !this.quality.reduceMotion) {
@@ -343,8 +395,10 @@ export class SceneManager {
       this.shakeIntensity = 0;
     }
 
-    this.cameraZoom += (this.targetCameraZoom - this.cameraZoom) * Math.min(1, dt * 4);
-    this.worldContainer.position.set(offsetX, offsetY);
+    this.cameraZoom += (this.targetCameraZoom - this.cameraZoom) * Math.min(1, dt * 4.5);
+    this.worldContainer.pivot.set(cx, cy);
+    this.worldContainer.position.set(cx + offsetX, cy + offsetY);
+    this.worldContainer.scale.set(this.cameraZoom);
 
     // 5. Update Sky, Orbits, SparkCore, Effects, and PostProcess
     this.skyLayer.update(
@@ -360,7 +414,7 @@ export class SceneManager {
 
     this.orbitsLayer.syncWithState(this.sim.state.generators);
     this.orbitsLayer.update(
-      dt,
+      effectiveDt,
       this.elapsedSeconds,
       cx,
       cy,
@@ -396,7 +450,7 @@ export class SceneManager {
 
     const autoComets = this.sim.state.darkMatterUpgrades?.includes('dm_auto_comets') ?? false;
     this.effectsLayer.update(
-      dt,
+      effectiveDt,
       autoComets,
       (def, x, y) => {
         const res = this.sim.catchComet({
@@ -405,6 +459,11 @@ export class SceneManager {
           duration: def.duration,
           name: def.name,
         });
+        this.postProcess.triggerEraBloomPulse();
+        this.postProcess.triggerShockwaveDistortion(x / w, y / h, 0.009, 0.7);
+        if (!this.quality.reduceMotion) {
+          this.shakeIntensity = 4.0;
+        }
         this.onCometCaught?.(def, x, y, res.description);
       },
       cx,

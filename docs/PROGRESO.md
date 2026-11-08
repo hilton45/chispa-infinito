@@ -15,8 +15,8 @@
 | **Fase G3** | Núcleo «Chispa» con detalle y variantes por era | **Completado** | 2026-11-08 | 2026-11-08 | Superficie FBM con domain warping, limb darkening, god rays 28 muestras y 5 variantes |
 | **Fase G4** | 16 cuerpos con shader propio e instanciación | **Completado** | 2026-11-08 | 2026-11-08 | 16 shaders procedurales + 3.460 sub-estrellas instanciadas en GPU a >120 FPS |
 | **Fase G5** | Partículas en GPU (50.000) y cielo en capas | **Completado** | 2026-11-08 | 2026-11-08 | 50.000 partículas en Alta a 145 FPS; paralaje, galaxias lejanas y estrellas con temperatura |
-| **Fase G6** | Cinemática (Big Bang con cámara lenta y onda de choque, eras, cometas) | **En progreso** | 2026-11-08 | — | Big Bang y cambio de era completos, con cámara lenta y distorsión |
-| **Fase G7** | QA, medición realista de rendimiento y entrega `v1.1.0` | Pendiente | — | — | Capturas A–G antes/después, `docs/RENDIMIENTO.md` con datos reales, tag `v1.1.0` |
+| **Fase G6** | Cinemática (Big Bang con cámara lenta y onda de choque, eras, cometas) | **Completado** | 2026-11-08 | 2026-11-08 | Big Bang de 6 s con cámara lenta 1,5 s, zoom, distorsión y transiciones de era |
+| **Fase G7** | QA, medición realista de rendimiento y entrega `v1.1.0` | **En progreso** | 2026-11-08 | — | Capturas A–G antes/después, `docs/RENDIMIENTO.md` con datos reales, tag `v1.1.0` |
 
 ---
 

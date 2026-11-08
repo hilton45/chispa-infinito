@@ -806,6 +806,7 @@ export class UIManager {
         return;
       }
       this.bigBangArmed = false;
+      this.renderBigBangTab();
       this.audio.playBigBang();
       this.scene.playBigBangCinematic(() => {
         const res = this.sim.triggerBigBang();
