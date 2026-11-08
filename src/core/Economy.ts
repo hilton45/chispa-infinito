@@ -219,6 +219,11 @@ export function calculateGlobalMultiplier(state: GameState): Decimal {
     }
   }
 
+  // 9. Cosmic Extensions: Reactor de Vacío de Punto Cero (+100% / ×2)
+  if (state.unlockedExtensions?.includes('ext_quantum_vacuum')) {
+    mult = mult.times(2.0);
+  }
+
   return mult;
 }
 
@@ -317,9 +322,16 @@ export function calculateOfflineGains(
     return { energyGained: ZERO, actualSeconds: 0 };
   }
 
-  const actualSeconds = Math.min(secondsElapsed, state.maxOfflineSeconds);
+  let maxSec = state.maxOfflineSeconds;
+  let eff = state.offlineEfficiency;
+  if (state.unlockedExtensions?.includes('ext_offline_chamber')) {
+    maxSec = Math.max(maxSec, 172800); // 48 hours
+    eff = Math.max(eff, 1.0); // 100%
+  }
+
+  const actualSeconds = Math.min(secondsElapsed, maxSec);
   const sps = calculateTotalSPS(state);
-  const energyGained = sps.times(actualSeconds).times(state.offlineEfficiency);
+  const energyGained = sps.times(actualSeconds).times(eff);
 
   return { energyGained, actualSeconds };
 }

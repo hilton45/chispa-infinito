@@ -91,13 +91,20 @@ const SPARK_FRAG = `
     // Base accent color & skin override
     vec3 accent = uAccentColor;
     if (uSkinMode == 1.0) {
-      accent = vec3(1.0, 0.52, 0.12);
+      accent = vec3(1.0, 0.47, 0.08); // Fulgor Solar
     } else if (uSkinMode == 2.0) {
-      accent = 0.55 + 0.45 * cos(uTime * 1.6 + angle + vec3(0.0, 2.1, 4.2));
+      accent = 0.55 + 0.45 * cos(uTime * 1.6 + angle + vec3(0.0, 2.1, 4.2)); // Prisma RGB
     } else if (uSkinMode == 3.0) {
-      accent = vec3(1.0, 0.84, 0.26);
+      accent = vec3(1.0, 0.84, 0.18); // Oro Divino
     } else if (uSkinMode == 4.0) {
-      accent = vec3(0.68, 0.24, 1.0);
+      accent = vec3(0.62, 0.18, 1.0); // Singularidad Abisal
+    } else if (uSkinMode == 5.0) {
+      // Neón Cyberpunk: cian de fibra óptica y magenta radiactivo
+      float cyc = 0.5 + 0.5 * sin(angle * 3.0 + uTime * 2.8);
+      accent = mix(vec3(0.0, 0.94, 1.0), vec3(1.0, 0.0, 0.65), cyc);
+    } else if (uSkinMode == 6.0) {
+      // Hiper-Espacio Esmeralda: verde aurora boreal
+      accent = vec3(0.05, 1.0, 0.55);
     }
 
     vec3 hotWhite = vec3(1.0, 0.98, 0.93);
@@ -329,6 +336,8 @@ export class SparkCore {
     else if (selectedSkinId === 'skin_rainbow_resonator') skinMode = 2;
     else if (selectedSkinId === 'skin_comet_gold') skinMode = 3;
     else if (selectedSkinId === 'skin_void_black_hole') skinMode = 4;
+    else if (selectedSkinId === 'skin_neon_cyberpunk') skinMode = 5;
+    else if (selectedSkinId === 'skin_emerald_aurora') skinMode = 6;
 
     const pulse = reduceMotion ? 1.0 : 1.0 + 0.045 * Math.sin(2.2 * elapsedSeconds);
     const [r, g, b] = hslToRgbNormalized(currentHue, 95, 62);

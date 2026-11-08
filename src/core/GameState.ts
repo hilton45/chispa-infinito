@@ -77,6 +77,9 @@ export interface GameState {
   selectedSkinId: string;
   unlockedSkins: string[];
 
+  // Extensions & Cosmic Modules
+  unlockedExtensions: string[];
+
   // Secret achievement trackers
   clicksInTwoSeconds: number;
   clicksRecentTimestamps: number[];
@@ -158,7 +161,16 @@ export function createInitialState(): GameState {
     maxOfflineSeconds: 28800, // 8 hours
 
     selectedSkinId: 'skin_default',
-    unlockedSkins: ['skin_default'],
+    unlockedSkins: [
+      'skin_default',
+      'skin_solar_flare',
+      'skin_rainbow_resonator',
+      'skin_comet_gold',
+      'skin_void_black_hole',
+      'skin_neon_cyberpunk',
+      'skin_emerald_aurora',
+    ],
+    unlockedExtensions: [],
 
     clicksInTwoSeconds: 0,
     clicksRecentTimestamps: [],

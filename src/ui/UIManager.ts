@@ -30,6 +30,8 @@ import {
   generateEraSVG,
 } from '@/data/extendedLayers';
 import { getCurrentWeeklyEvent } from '@/data/comets';
+import { COSMIC_EXTENSIONS } from '@/data/extensions';
+import { COSMIC_SKINS } from '@/data/skins';
 import {
   calculateBatchCost,
   calculateMaxAffordable,
@@ -44,6 +46,7 @@ import { QualitySetting } from '@/render/QualityGovernor';
 export type TabId =
   | 'generators'
   | 'upgrades'
+  | 'shop'
   | 'bigbang'
   | 'multiverse'
   | 'constellations'
@@ -516,6 +519,7 @@ export class UIManager {
     const tabs: Array<{ id: TabId; label: string; visible: boolean }> = [
       { id: 'generators', label: t('tab_generators'), visible: true },
       { id: 'upgrades', label: t('tab_upgrades'), visible: true },
+      { id: 'shop', label: '★ Tienda & Skins', visible: true },
       { id: 'bigbang', label: t('tab_bigbang'), visible: true },
       {
         id: 'multiverse',
@@ -596,6 +600,9 @@ export class UIManager {
         break;
       case 'upgrades':
         this.renderUpgradesTab();
+        break;
+      case 'shop':
+        this.renderShopTab();
         break;
       case 'bigbang':
         this.renderBigBangTab();
@@ -769,6 +776,128 @@ export class UIManager {
       <div class="gen-desc">Desbloquea más cuerpos orbitales o alcanza hitos para revelar nuevas mejoras (${s.upgradesPurchased.length}/${UPGRADES.length} adquiridas).</div>
     `;
     this.panelContentEl.appendChild(mystery);
+  }
+
+  private renderShopTab(): void {
+    const s = this.sim.state;
+    this.panelContentEl.innerHTML = '';
+
+    // Header & Currency Balances
+    const header = document.createElement('div');
+    header.className = 'section-box';
+    header.innerHTML = `
+      <div class="section-title">★ Tienda Cósmica & Armario de Skins</div>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px;">
+        Personaliza la estética de tu núcleo cuántico con skins legendarias y expande las capacidades del universo con extensiones permanentes.
+      </p>
+      <div style="display: flex; flex-wrap: wrap; gap: 10px; font-size: 0.8rem; padding: 8px 12px; background: rgba(0,0,0,0.35); border-radius: 8px; border: 1px solid var(--glass-border);">
+        <span>Chispas: <strong style="color: var(--accent-bright);">${this.fmt(s.energy)}</strong></span>
+        <span>Materia Oscura: <strong style="color: #c084fc;">${this.fmt(s.darkMatter)}</strong></span>
+        <span>Fragmentos: <strong style="color: var(--gold);">${this.fmt(s.realityFragments)}</strong></span>
+      </div>
+    `;
+    this.panelContentEl.appendChild(header);
+
+    // Section 1: Skins Cósmicas del Núcleo
+    const skinsHeader = document.createElement('div');
+    skinsHeader.className = 'section-box';
+    skinsHeader.innerHTML = `
+      <div class="section-title" style="display:flex; justify-content:space-between; align-items:center;">
+        <span>Skins Cósmicas del Núcleo (7 Disponibles)</span>
+        <span style="font-size:0.75rem; color:var(--gold);">Activa: ${COSMIC_SKINS.find((k) => k.id === s.selectedSkinId)?.name || 'Chispa'}</span>
+      </div>
+      <p style="font-size:0.78rem; color:var(--text-muted);">
+        Al equipar una skin, el núcleo esférico, sus rayos volumétricos y el anillo de resonancia cambian de inmediato en tiempo real.
+      </p>
+    `;
+    this.panelContentEl.appendChild(skinsHeader);
+
+    for (const sk of COSMIC_SKINS) {
+      const isSelected = s.selectedSkinId === sk.id;
+      const card = document.createElement('div');
+      card.className = `gen-card ${isSelected ? 'affordable' : ''}`;
+      card.style.display = 'block';
+      card.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div style="width:14px; height:14px; border-radius:50%; background:${sk.accentHex}; box-shadow:0 0 10px ${sk.accentHex}; border:1.5px solid #fff;"></div>
+            <strong style="color:#fff; font-size:0.86rem;">${sk.name}</strong>
+          </div>
+          <span style="font-size:0.7rem; padding:2px 8px; border-radius:4px; background:rgba(255,255,255,0.08); color:${sk.accentHex}; font-weight:bold;">${sk.badge}</span>
+        </div>
+        <div style="font-size:0.76rem; color:var(--text-muted); margin-bottom:8px;">${sk.description}</div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:0.75rem; color:${sk.accentHex};">${sk.colorName}</span>
+          <button class="action-btn ${isSelected ? 'active' : ''}" style="padding:4px 16px; font-size:0.75rem; ${isSelected ? 'background:rgba(5, 150, 105, 0.4); border-color:#10b981; color:#fff;' : ''}">
+            ${isSelected ? '✓ Equipado' : 'Equipar'}
+          </button>
+        </div>
+      `;
+      const btn = card.querySelector('button')!;
+      btn.addEventListener('click', () => {
+        this.sim.selectSkin(sk.id);
+        this.renderShopTab();
+        this.audio.playMilestone();
+      });
+      this.panelContentEl.appendChild(card);
+    }
+
+    // Section 2: Extensiones Cósmicas
+    const extHeader = document.createElement('div');
+    extHeader.className = 'section-box';
+    extHeader.innerHTML = `
+      <div class="section-title">Módulos de Expansión & Extensiones Cósmicas</div>
+      <p style="font-size:0.78rem; color:var(--text-muted);">
+        Mejoras perpetuas del sistema que automatizan y multiplican la progresión de tu universo.
+      </p>
+    `;
+    this.panelContentEl.appendChild(extHeader);
+
+    for (const ext of COSMIC_EXTENSIONS) {
+      const owned = s.unlockedExtensions?.includes(ext.id);
+      let canAfford = false;
+      if (!owned) {
+        if (ext.currency === 'darkMatter') canAfford = s.darkMatter.gte(ext.cost);
+        else if (ext.currency === 'realityFragments') canAfford = s.realityFragments.gte(ext.cost);
+        else canAfford = s.energy.gte(ext.cost);
+      }
+
+      const card = document.createElement('div');
+      card.className = `gen-card ${owned ? 'affordable' : canAfford ? '' : 'disabled'}`;
+      card.style.display = 'block';
+      card.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:1.1rem;">${ext.icon}</span>
+            <strong style="color:#fff; font-size:0.86rem;">${ext.name}</strong>
+          </div>
+          <span style="font-size:0.7rem; padding:2px 8px; border-radius:4px; background:rgba(255,255,255,0.08); color:var(--accent-bright); font-weight:bold;">${ext.badge}</span>
+        </div>
+        <div style="font-size:0.76rem; color:var(--text-muted); margin-bottom:8px;">${ext.description}</div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:0.76rem; color:${owned ? 'var(--success)' : 'var(--gold)'}; font-weight:bold;">
+            ${owned ? '✓ Instalado y Activo' : ext.costLabel}
+          </span>
+          <button class="action-btn ${owned ? 'active' : ''}" style="padding:4px 16px; font-size:0.75rem; ${owned ? 'background:rgba(5, 150, 105, 0.4); border-color:#10b981; color:#fff;' : ''}" ${owned || !canAfford ? 'disabled' : ''}>
+            ${owned ? '✓ Activo' : 'Instalar'}
+          </button>
+        </div>
+      `;
+
+      if (!owned) {
+        const btn = card.querySelector('button')!;
+        btn.addEventListener('click', () => {
+          if (this.sim.buyExtension(ext.id)) {
+            this.showToast('Extensión Instalada', `${ext.name} se ha activado permanentemente.`);
+            this.audio.playMilestone();
+            this.renderShopTab();
+            this.updateHUD();
+          }
+        });
+      }
+
+      this.panelContentEl.appendChild(card);
+    }
   }
 
   private renderBigBangTab(): void {

@@ -9,6 +9,7 @@ import {
   COSMIC_CHALLENGES,
   CONSTELLATIONS,
 } from '@/data/extendedLayers';
+import { COSMIC_EXTENSIONS } from '@/data/extensions';
 import { GameState, createInitialState, ActiveCometEffect } from './GameState';
 import {
   calculateBatchCost,
@@ -26,6 +27,7 @@ export class Simulation {
   public state: GameState;
   private listeners: EventCallback[] = [];
   private autoTimer = 0;
+  private autoClickAccumulator = 0;
 
   constructor(initialState?: GameState) {
     this.state = initialState ?? createInitialState();
@@ -222,6 +224,22 @@ export class Simulation {
 
   public tick(dt: number): void {
     if (dt <= 0) return;
+
+    // Extensión Compresor Temporal Cuántico (velocidad x2)
+    if (this.state.unlockedExtensions?.includes('ext_time_warp')) {
+      dt *= 2.0;
+    }
+
+    // Extensión Pulsador Cuántico Automático (10 clics por segundo)
+    if (this.state.unlockedExtensions?.includes('ext_autoclicker')) {
+      this.autoClickAccumulator += dt;
+      let safetyCount = 0;
+      while (this.autoClickAccumulator >= 0.1 && safetyCount < 30) {
+        this.autoClickAccumulator -= 0.1;
+        safetyCount++;
+        this.clickCore();
+      }
+    }
 
     this.state.timePlayedSeconds += dt;
     this.state.lastTickTimestamp = Date.now();
@@ -704,5 +722,40 @@ export class Simulation {
       cost: bestTarget.cost,
       progress: Math.max(0, isNaN(progress) ? 0 : progress),
     };
+  }
+
+  public buyExtension(extensionId: string): boolean {
+    if (!this.state.unlockedExtensions) {
+      this.state.unlockedExtensions = [];
+    }
+    if (this.state.unlockedExtensions.includes(extensionId)) {
+      return false;
+    }
+
+    const ext = COSMIC_EXTENSIONS.find((e) => e.id === extensionId);
+    if (!ext) return false;
+
+    if (ext.currency === 'darkMatter') {
+      if (this.state.darkMatter.lt(ext.cost)) return false;
+      this.state.darkMatter = this.state.darkMatter.minus(ext.cost);
+    } else if (ext.currency === 'realityFragments') {
+      if (this.state.realityFragments.lt(ext.cost)) return false;
+      this.state.realityFragments = this.state.realityFragments.minus(ext.cost);
+    } else {
+      if (this.state.energy.lt(ext.cost)) return false;
+      this.state.energy = this.state.energy.minus(ext.cost);
+    }
+
+    this.state.unlockedExtensions.push(extensionId);
+    this.recalculateRates();
+    this.checkAchievements();
+    this.emit('buy_extension', { extension: ext });
+    return true;
+  }
+
+  public selectSkin(skinId: string): boolean {
+    this.state.selectedSkinId = skinId;
+    this.emit('skin_changed', { skinId });
+    return true;
   }
 }
