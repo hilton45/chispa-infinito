@@ -23,6 +23,7 @@ import {
   OBSERVER_QUOTES,
   ENCYCLOPEDIA_ENTRIES,
   MISSIONS,
+  STORY_CHAPTERS,
   generateEncyclopediaSVG,
 } from '@/data/extendedLayers';
 import { getCurrentWeeklyEvent } from '@/data/comets';
@@ -1138,6 +1139,21 @@ export class UIManager {
   private renderEncyclopediaTab(): void {
     const s = this.sim.state;
     this.panelContentEl.innerHTML = '';
+
+    // 5 Story Chapters (Section 11)
+    const chaptersBox = document.createElement('div');
+    chaptersBox.className = 'section-box';
+    chaptersBox.innerHTML = `<div class="section-title">Crónica en Cinco Capítulos</div>`;
+    for (const ch of STORY_CHAPTERS) {
+      const unlocked = ch.isUnlocked(s);
+      const item = document.createElement('div');
+      item.style.cssText = 'padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.06); font-size:0.78rem;';
+      item.innerHTML = unlocked
+        ? `<div style="color:var(--accent-bright); font-weight:600;">${ch.title}</div><div style="color:#e2e8f0; margin-top:2px;">«${ch.body}»</div>`
+        : `<div style="color:var(--text-muted); opacity:0.6;">Capítulo ${ch.chapter} · ??? (Sigue avanzando de capa)</div>`;
+      chaptersBox.appendChild(item);
+    }
+    this.panelContentEl.appendChild(chaptersBox);
 
     const intro = document.createElement('div');
     intro.className = 'section-box';

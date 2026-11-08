@@ -428,3 +428,44 @@ export function generateEncyclopediaSVG(_genId: string, index: number): string {
   `;
 }
 
+export interface StoryChapter {
+  chapter: number;
+  title: string;
+  body: string;
+  isUnlocked: (state: any) => boolean;
+}
+
+export const STORY_CHAPTERS: StoryChapter[] = [
+  {
+    chapter: 1,
+    title: 'Capítulo I · La Chispa',
+    body: 'En el silencio total, algo se enciende. No sabe por qué.',
+    isUnlocked: () => true,
+  },
+  {
+    chapter: 2,
+    title: 'Capítulo II · Las Cenizas',
+    body: 'Todo termina, todo vuelve a empezar, y algo recuerda.',
+    isUnlocked: (s) => s.bigBangsTotal >= 1,
+  },
+  {
+    chapter: 3,
+    title: 'Capítulo III · Las Otras',
+    body: 'Se descubre que hay más universos y que se parecen mucho.',
+    isUnlocked: (s) => s.bigBangsTotal >= 10 || s.darkMatterUpgrades?.includes('dm_multiverse_key'),
+  },
+  {
+    chapter: 4,
+    title: 'Capítulo IV · El Observador',
+    body: 'Alguien mira. Resulta que eres tú, y que mirar también crea.',
+    isUnlocked: (s) => s.bigBangsTotal >= 25,
+  },
+  {
+    chapter: 5,
+    title: 'Capítulo V · La Primera Chispa',
+    body: 'El tiempo se pliega y puedes reescribir cómo empezó todo.',
+    isUnlocked: (s) => s.bigBangsTotal >= 50 || s.newGamePlusCount >= 1,
+  },
+];
+
+
