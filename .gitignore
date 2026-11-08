@@ -5,5 +5,12 @@ dist/
 .vite/
 coverage/
 nbproject/
+.chispa-profile/
+release/
+CHISPA-Infinito.exe
+scripts/Launcher.cs
+scripts/chispa.ico
+
+
 
 /nbproject/private/
