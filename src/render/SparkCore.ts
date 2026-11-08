@@ -1,5 +1,5 @@
-import { Container, Graphics, Mesh, MeshGeometry, Shader } from 'pixi.js';
-import { hslToRgbNormalized, hslToHexNumber } from '@/utils/Color';
+import { Container, Mesh, MeshGeometry, Shader } from 'pixi.js';
+import { hslToRgbNormalized } from '@/utils/Color';
 import { Decimal } from '@/utils/Decimal';
 
 const SPARK_VERT = `
@@ -27,57 +27,214 @@ const SPARK_FRAG = `
   uniform float uRayCount;
   uniform float uPulse;
   uniform float uKick;
-  uniform float uEvolutionStage;
+  uniform float uVariant;
+  uniform float uComboRatio;
   uniform float uSkinMode;
+  uniform float uEnableGodRays;
+
+  float hash(vec2 p) {
+    p = fract(p * vec2(127.1, 311.7));
+    p += dot(p, p + 34.53);
+    return fract(p.x * p.y);
+  }
+
+  float noise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    float a = hash(i);
+    float b = hash(i + vec2(1.0, 0.0));
+    float c = hash(i + vec2(0.0, 1.0));
+    float d = hash(i + vec2(1.0, 1.0));
+    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+  }
+
+  float fbm(vec2 p) {
+    float v = 0.0;
+    float a = 0.5;
+    mat2 rot = mat2(0.8, 0.6, -0.6, 0.8);
+    for (int i = 0; i < 4; i++) {
+      v += a * noise(p);
+      p = rot * p * 2.05 + vec2(1.9, 7.3);
+      a *= 0.5;
+    }
+    return v;
+  }
+
+  // Domain-warped 4-octave FBM for convective granulation and plasma filaments
+  float warpedSurface(vec2 p, float t, out float qOut) {
+    vec2 q = vec2(
+      fbm(p + vec2(0.0, 0.0) + t * 0.14),
+      fbm(p + vec2(5.2, 1.3) - t * 0.12)
+    );
+    qOut = length(q);
+    return fbm(p + 2.45 * q + vec2(t * 0.09, -t * 0.11));
+  }
+
+  // Angular emission function used by the 32-sample volumetric God Rays
+  float angularEmission(vec2 samplePos, float t, float rayN) {
+    float r = length(samplePos);
+    float ang = atan(samplePos.y, samplePos.x);
+    float w1 = 0.5 + 0.5 * sin(ang * rayN + t * 0.65 + sin(r * 8.0 - t * 2.0) * 0.6);
+    float w2 = 0.5 + 0.5 * cos(ang * (rayN + 4.0) - t * 0.95);
+    float radial = exp(-r * 3.1) * smoothstep(0.08, 0.28, r);
+    return pow(w1 * 0.62 + w2 * 0.38, 1.8) * radial;
+  }
 
   void main(void) {
     vec2 p = (vUV - 0.5) * 2.0;
-    float d = length(p) / max(0.5, uPulse + uKick);
-    float angle = atan(p.y, p.x);
+    float scale = max(0.55, uPulse + uKick * 0.9);
+    vec2 sp = p / scale;
+    float d = length(sp);
+    float angle = atan(sp.y, sp.x);
 
-    // Core body: smoothstep(0.34, 0.30, d) in white (or dark event horizon for black hole stage/skin)
-    float body = smoothstep(0.34, 0.28, d);
-
-    // Corona: pow(0.06 / d, 1.4)
-    float corona = pow(0.06 / max(d, 0.015), 1.4);
-
-    // Rotating rays: sin(atan(y,x) * N + t * 0.4) * smoothstep(1.0, 0.2, d)
-    float rayWave = 0.5 + 0.5 * sin(angle * uRayCount + uTime * 0.4);
-    float rayWave2 = 0.5 + 0.5 * sin(angle * (uRayCount + 3.0) - uTime * 0.65);
-    float rays = (rayWave * 0.65 + rayWave2 * 0.35) * smoothstep(1.0, 0.2, d) * smoothstep(0.12, 0.35, d);
-
+    // Base accent color & skin override
     vec3 accent = uAccentColor;
     if (uSkinMode == 1.0) {
-      // Solar flare skin
-      accent = vec3(1.0, 0.55, 0.12);
+      accent = vec3(1.0, 0.52, 0.12);
     } else if (uSkinMode == 2.0) {
-      // Rainbow resonator skin
-      accent = 0.5 + 0.5 * cos(uTime * 1.5 + angle + vec3(0.0, 2.0, 4.0));
+      accent = 0.55 + 0.45 * cos(uTime * 1.6 + angle + vec3(0.0, 2.1, 4.2));
     } else if (uSkinMode == 3.0) {
-      // Comet gold skin
-      accent = vec3(1.0, 0.85, 0.28);
+      accent = vec3(1.0, 0.84, 0.26);
     } else if (uSkinMode == 4.0) {
-      // Void black hole skin
-      accent = vec3(0.65, 0.25, 1.0);
+      accent = vec3(0.68, 0.24, 1.0);
     }
 
-    // Evolution visual nuance (subtle harmonic outer halo rings in advanced eras)
-    float ringHighlight = 0.0;
-    if (uEvolutionStage >= 2.0) {
-      ringHighlight = smoothstep(0.025, 0.0, abs(d - 0.38)) * 0.55;
+    vec3 hotWhite = vec3(1.0, 0.98, 0.93);
+    vec3 warmCore = mix(accent, vec3(1.0, 0.92, 0.76), 0.58);
+    vec3 deepLimb = accent * 0.48 + vec3(0.06, 0.03, 0.12);
+
+    // Variant blending weights (0: Plasma, 1: Star+Sunspots, 2: Pulsar+Jets, 3: Luminous Black Hole, 4: Singularity)
+    float wPlasma = clamp(1.0 - abs(uVariant - 0.0), 0.0, 1.0);
+    float wStar   = clamp(1.0 - abs(uVariant - 1.0), 0.0, 1.0);
+    float wPulsar = clamp(1.0 - abs(uVariant - 2.0), 0.0, 1.0);
+    float wBH     = clamp(1.0 - abs(uVariant - 3.0), 0.0, 1.0);
+    float wSing   = clamp(1.0 - abs(uVariant - 4.0), 0.0, 1.0);
+
+    // 1. SURFACE: 3D Spherical Projection + Domain-Warped FBM + Limb Darkening + Granulation
+    float coreRadius = 0.33;
+    float sphereMask = smoothstep(coreRadius + 0.018, coreRadius - 0.012, d);
+    vec3 surfaceCol = vec3(0.0);
+
+    if (d < coreRadius + 0.03) {
+      float normR = clamp(d / coreRadius, 0.0, 1.0);
+      // 3D hemisphere normal Z for physical Eddington limb darkening
+      float z = sqrt(max(0.01, 1.0 - normR * normR));
+      vec2 sphereUV = sp / (coreRadius * (0.62 + 0.38 * z));
+      // Slow axial rotation
+      float rotA = uTime * 0.16;
+      mat2 rotMat = mat2(cos(rotA), -sin(rotA), sin(rotA), cos(rotA));
+      sphereUV = rotMat * sphereUV;
+
+      float warpMag = 0.0;
+      float gran = warpedSurface(sphereUV * 3.4, uTime, warpMag);
+      float fineGran = fbm(sphereUV * 8.5 - uTime * 0.25);
+
+      // Physical limb darkening: center is hotter, limb reveals deep convective color & contrast
+      float limb = pow(z, 0.68);
+      float cellContrast = smoothstep(0.24, 0.78, gran * 0.72 + fineGran * 0.28);
+
+      // Variant 1 (Star) magnetic sunspots with bright penumbra
+      float sunspotMask = smoothstep(0.32, 0.18, gran) * smoothstep(0.15, 0.85, normR);
+      float spotDarkening = 1.0 - wStar * sunspotMask * 0.68;
+
+      // Center hotspot burns toward warm white while preserving visible cellular texture around it
+      float centerHot = pow(z, 2.4) * (0.65 + 0.35 * cellContrast) + uKick * 0.45;
+      surfaceCol = mix(deepLimb, warmCore, limb * (0.45 + 0.55 * cellContrast));
+      surfaceCol = mix(surfaceCol, hotWhite, clamp(centerHot * 0.82, 0.0, 0.92));
+      surfaceCol *= spotDarkening;
+
+      // Variant 0 (Plasma) electric filaments across the sphere
+      float plasmaArcs = smoothstep(0.52, 0.82, warpMag) * (1.0 - z * 0.4);
+      surfaceCol += accent * plasmaArcs * (0.45 + 0.55 * wPlasma);
+
+      // Variant 3 (Luminous Black Hole) relativistic inner shadow + blazing photon ring at r = 0.24
+      if (wBH > 0.01) {
+        float eventHorizon = smoothstep(0.22, 0.12, d);
+        float photonRing = smoothstep(0.045, 0.0, abs(d - 0.235)) * (1.4 + 0.6 * sin(angle * 3.0 - uTime * 5.0));
+        vec3 bhCol = mix(surfaceCol, vec3(0.03, 0.01, 0.07) + accent * 0.22 * fineGran, eventHorizon * 0.88);
+        bhCol += mix(accent, hotWhite, 0.7) * photonRing * 1.45;
+        surfaceCol = mix(surfaceCol, bhCol, wBH);
+      }
+
+      // Variant 4 (Singularity) concentric quantum lensing caustics
+      if (wSing > 0.01) {
+        float caustics = 0.5 + 0.5 * sin(normR * 22.0 - uTime * 4.5 + gran * 4.0);
+        surfaceCol += mix(accent, hotWhite, 0.6) * pow(caustics, 3.0) * wSing * 0.65;
+      }
     }
 
-    vec3 col = accent * (corona * 0.95 + rays * 0.65 + ringHighlight);
+    // 2. CORONA: Radial pow falloff + turbulent coronal prominences
+    float coronaNoise = fbm(vec2(angle * 2.5, d * 5.0 - uTime * 0.45));
+    float coronaDist = max(0.016, abs(d - coreRadius * 0.88));
+    float corona = pow(0.058 / coronaDist, 1.38) * (0.78 + 0.45 * coronaNoise);
+    corona *= smoothstep(1.0, 0.26, d);
 
-    // Core body: smoothstep(0.34, 0.30, d) in pure white across all 16 eras (Section 4B)
-    float whiteBody = smoothstep(0.34, 0.30, d);
-    col = mix(col, vec3(1.0, 1.0, 1.0), whiteBody);
+    // 3. VOLUMETRIC GOD RAYS: 28-sample radial march from core over the glow
+    float godRays = 0.0;
+    int steps = uEnableGodRays > 0.5 ? 28 : 10;
+    float invSteps = 1.0 / float(steps);
+    float decay = 0.93;
+    float weight = 1.0;
+    for (int i = 0; i < 28; i++) {
+      if (i >= steps) break;
+      float frac = float(i) * invSteps;
+      vec2 samplePos = sp * (1.0 - frac * 0.68);
+      godRays += angularEmission(samplePos, uTime, uRayCount) * weight;
+      weight *= decay;
+    }
+    godRays *= invSteps * (1.65 + uKick * 3.8 + uComboRatio * 1.15);
 
-    // Smooth circular falloff at outer quad boundary so no hard square edge ever shows
-    float edgeFade = smoothstep(1.0, 0.65, length(p));
+    // 4. VARIANT EXTRAS: Bipolar Relativistic Jets (Pulsar) & Accretion Disk (Black Hole / Singularity)
+    float variantGlow = 0.0;
+    if (wPulsar > 0.01) {
+      float jetAxis = uTime * 1.35;
+      float align = abs(cos(angle - jetAxis));
+      float jetCone = pow(align, 16.0) * smoothstep(0.18, 0.42, d) * smoothstep(0.98, 0.35, d);
+      float jetPulses = 0.65 + 0.35 * sin(d * 28.0 - uTime * 14.0);
+      variantGlow += jetCone * jetPulses * wPulsar * 1.65;
+    }
+    if (wBH + wSing > 0.01) {
+      // Tilted relativistic accretion disk with Doppler beaming on the approaching side
+      vec2 diskP = mat2(0.88, -0.47, 0.47, 0.88) * sp;
+      float diskR = length(vec2(diskP.x, diskP.y * 2.8));
+      float diskBand = smoothstep(0.56, 0.34, diskR) * smoothstep(0.20, 0.30, diskR);
+      float doppler = 0.65 + 0.55 * clamp(-diskP.x / max(0.1, diskR), -0.8, 1.0);
+      variantGlow += diskBand * doppler * (wBH + wSing * 0.8) * 1.15;
+    }
+
+    // 5. RESONANCE RING SHADER (glowing plasma track + active combo arc + rainbow max combo + shockwave)
+    float ringR = 0.405 + uKick * 0.055;
+    float ringDist = abs(d - ringR);
+    float baseTrack = smoothstep(0.012, 0.0, ringDist) * 0.32;
+
+    float activeRing = 0.0;
+    vec3 ringCol = mix(accent, hotWhite, 0.45);
+    if (uComboRatio > 0.001) {
+      // Normalized angle starting from top (-PI/2) clockwise
+      float normAng = fract((angle + 1.5707963) / 6.2831853);
+      float inArc = smoothstep(uComboRatio + 0.015, uComboRatio - 0.015, normAng);
+      float plasmaPulse = 0.82 + 0.18 * sin(normAng * 40.0 - uTime * 9.0);
+      activeRing = (smoothstep(0.018, 0.0, ringDist) + pow(0.004 / max(ringDist, 0.002), 1.2) * 0.35) * inArc * plasmaPulse;
+
+      if (uComboRatio >= 0.98) {
+        // Max combo: iridescent rainbow resonator halo
+        ringCol = 0.55 + 0.45 * cos(normAng * 6.2831853 * 2.0 - uTime * 3.5 + vec3(0.0, 2.09, 4.18));
+        ringCol = mix(ringCol, hotWhite, 0.3);
+      }
+    }
+
+    // Combine all layers in linear HDR space
+    vec3 col = accent * (corona * 0.88 + godRays * 1.05 + variantGlow);
+    col += mix(accent, hotWhite, 0.55) * (corona * godRays * 0.65);
+    col = mix(col, surfaceCol, sphereMask);
+    col += ringCol * (baseTrack + activeRing * 1.35);
+
+    // Outer quad edge fade so no bounding box ever clips
+    float edgeFade = smoothstep(1.0, 0.64, length(p));
     col *= edgeFade;
 
-    float alpha = clamp((corona * 0.65 + rays * 0.45 + whiteBody) * edgeFade, 0.0, 1.0);
+    float alpha = clamp((corona * 0.72 + godRays * 0.65 + variantGlow + sphereMask + baseTrack + activeRing) * edgeFade, 0.0, 1.0);
     finalColor = vec4(col, alpha);
   }
 `;
@@ -86,14 +243,14 @@ export class SparkCore {
   public container: Container;
   private sparkMesh: Mesh<MeshGeometry, Shader>;
   private sparkShader: Shader;
-  private resonanceGraphics: Graphics;
   private kick = 0;
+  private currentVariant = 0;
   public currentRadius = 90;
 
   constructor() {
     this.container = new Container();
 
-    const r = 220;
+    const r = 240;
     const geometry = new MeshGeometry({
       positions: new Float32Array([-r, -r, r, -r, r, r, -r, r]),
       uvs: new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]),
@@ -112,21 +269,20 @@ export class SparkCore {
           uRayCount: { value: 5, type: 'f32' },
           uPulse: { value: 1.0, type: 'f32' },
           uKick: { value: 0.0, type: 'f32' },
-          uEvolutionStage: { value: 0.0, type: 'f32' },
+          uVariant: { value: 0.0, type: 'f32' },
+          uComboRatio: { value: 0.0, type: 'f32' },
           uSkinMode: { value: 0.0, type: 'f32' },
+          uEnableGodRays: { value: 1.0, type: 'f32' },
         },
       },
     });
 
     this.sparkMesh = new Mesh({ geometry, shader: this.sparkShader });
     this.container.addChild(this.sparkMesh);
-
-    this.resonanceGraphics = new Graphics();
-    this.container.addChild(this.resonanceGraphics);
   }
 
   public triggerClickKick(): void {
-    this.kick = 0.16;
+    this.kick = 0.18;
   }
 
   public update(
@@ -139,44 +295,44 @@ export class SparkCore {
     resonanceCombo: number,
     maxResonanceCombo: number,
     selectedSkinId: string,
-    reduceMotion: boolean
+    reduceMotion: boolean,
+    enableGodRays = true
   ): void {
-    // Decay kick by x0.86 per frame
     this.kick *= 0.86;
     if (this.kick < 0.001) this.kick = 0;
 
-    // Core radius grows with log10(totalEnergy) between 7.5% and 12.5% of minSide
-    // Ensure on mobile (< 500px minSide) the core + corona occupies >= 25% of width
+    // Core radius grows with log10(totalEnergy) and guarantees >= 25% width on mobile
     const logE = totalEnergy.gt(1) ? Math.max(0, Decimal.log10(totalEnergy)) : 0;
-    const growthFactor = Math.min(1, logE / 35); // reaches max size around 1e35
-    const pct = 0.085 + growthFactor * 0.045; // 8.5% to 13.0% radius (17% to 26% diameter of body, >35% with corona)
-    const minPxRadius = minSceneSide < 500 ? minSceneSide * 0.145 : 48;
+    const growthFactor = Math.min(1, logE / 35);
+    const pct = 0.088 + growthFactor * 0.045;
+    const minPxRadius = minSceneSide < 500 ? minSceneSide * 0.148 : 50;
     const visualRadius = Math.max(minPxRadius, minSceneSide * pct);
     this.currentRadius = visualRadius;
 
-    // Mesh quad is 2.6x visualRadius so the corona and rays have plenty of room to fade
-    const meshScale = (visualRadius * 2.6) / 220;
+    const meshScale = (visualRadius * 2.75) / 240;
     this.sparkMesh.scale.set(meshScale);
 
-    // Ray count: N = 5 + eras + cycles (max 15)
     const rayCount = Math.min(15, 5 + eraIndex + bigBangs);
 
-    // Evolution stage based on eraIndex
-    let evolutionStage = 0;
-    if (eraIndex >= 12) evolutionStage = 4; // Singularity
-    else if (eraIndex >= 8) evolutionStage = 3; // Luminous Black Hole
-    else if (eraIndex >= 4) evolutionStage = 2; // Pulsar
-    else if (eraIndex >= 1) evolutionStage = 1; // Star
+    // Target variant by era (0: Plasma, 1: Star with spots, 2: Pulsar with jets, 3: Luminous BH with photon ring, 4: Singularity)
+    let targetVariant = 0;
+    if (eraIndex >= 12) targetVariant = 4;
+    else if (eraIndex >= 8) targetVariant = 3;
+    else if (eraIndex >= 5) targetVariant = 2;
+    else if (eraIndex >= 2) targetVariant = 1;
 
-    // Skin mapping
+    // Smoothly transition between core variants
+    this.currentVariant += (targetVariant - this.currentVariant) * 0.08;
+
     let skinMode = 0;
     if (selectedSkinId === 'skin_solar_flare') skinMode = 1;
     else if (selectedSkinId === 'skin_rainbow_resonator') skinMode = 2;
     else if (selectedSkinId === 'skin_comet_gold') skinMode = 3;
     else if (selectedSkinId === 'skin_void_black_hole') skinMode = 4;
 
-    const pulse = reduceMotion ? 1.0 : 1.0 + 0.05 * Math.sin(2.2 * elapsedSeconds);
+    const pulse = reduceMotion ? 1.0 : 1.0 + 0.045 * Math.sin(2.2 * elapsedSeconds);
     const [r, g, b] = hslToRgbNormalized(currentHue, 95, 62);
+    const comboRatio = Math.min(1, Math.max(0, resonanceCombo / Math.max(1, maxResonanceCombo)));
 
     const uniforms = (this.sparkShader.resources.sparkUniforms as any).uniforms;
     uniforms.uTime = reduceMotion ? 0 : elapsedSeconds;
@@ -184,52 +340,9 @@ export class SparkCore {
     uniforms.uRayCount = rayCount;
     uniforms.uPulse = pulse;
     uniforms.uKick = reduceMotion ? this.kick * 0.3 : this.kick;
-    uniforms.uEvolutionStage = evolutionStage;
+    uniforms.uVariant = this.currentVariant;
+    uniforms.uComboRatio = comboRatio;
     uniforms.uSkinMode = skinMode;
-
-    // Draw Resonance Ring around the core (always visible track + active combo arc)
-    const rg = this.resonanceGraphics;
-    rg.clear();
-
-    const ringRadius = visualRadius * 1.16 + this.kick * 22;
-    const trackColor = hslToHexNumber(currentHue, 90, 65);
-
-    // Base Resonance ring track (always visible around the core)
-    rg.circle(0, 0, ringRadius).stroke({
-      width: 2.2,
-      color: trackColor,
-      alpha: resonanceCombo > 0 ? 0.28 : 0.22,
-    });
-
-    if (resonanceCombo > 0) {
-      const ratio = Math.min(1, resonanceCombo / maxResonanceCombo);
-      const startAngle = -Math.PI / 2;
-      const endAngle = startAngle + ratio * Math.PI * 2;
-
-      if (ratio >= 0.99) {
-        // Max combo: Rainbow segmented halo!
-        const segments = 24;
-        for (let i = 0; i < segments; i++) {
-          const a0 = (i / segments) * Math.PI * 2 + elapsedSeconds * 2.0;
-          const a1 = ((i + 0.85) / segments) * Math.PI * 2 + elapsedSeconds * 2.0;
-          const segHue = (i / segments) * 360;
-          const segColor = hslToHexNumber(segHue, 100, 65);
-          rg.moveTo(Math.cos(a0) * ringRadius, Math.sin(a0) * ringRadius);
-          rg.arc(0, 0, ringRadius, a0, a1).stroke({
-            width: 4.5,
-            color: segColor,
-            alpha: 0.95,
-          });
-        }
-      } else {
-        const ringColor = hslToHexNumber(currentHue, 100, 70);
-        rg.moveTo(Math.cos(startAngle) * ringRadius, Math.sin(startAngle) * ringRadius);
-        rg.arc(0, 0, ringRadius, startAngle, endAngle).stroke({
-          width: 4.0,
-          color: ringColor,
-          alpha: 0.92,
-        });
-      }
-    }
+    uniforms.uEnableGodRays = enableGodRays ? 1.0 : 0.0;
   }
 }

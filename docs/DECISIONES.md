@@ -67,3 +67,12 @@ Este documento registra todas las decisiones arquitectónicas, de diseño y de b
 - **Decisión:**
   - Implementar extracción de altas luces HDR con umbral suave (*soft knee*) y pirámide *Dual Kawase* de 5 niveles en calidad Alta (3 en Media, 0 en Baja), quemando los picos de luminancia hacia blanco cálido antes de aplicar la curva fílmica ACES de Narkowicz.
   - Incorporar exposición automática suave con constante de inercia de `1.0 s`, destellos de lente anamórficos horizontales en calidad Alta, corrección de color por era (sombras, luces y contraste interpolados durante `3.0 s`) y *dithering* de ruido de gradiente intercalado (IGN) de 1 LSB (`±0.5/255`) para eliminar bandas en el cielo oscuro.
+
+---
+
+## ADR 007 · Fase G3 (v1.1): Núcleo «Chispa» Multicapa con FBM Domain Warping, God Rays y 5 Variantes
+- **Fecha:** Fase G3 (`v1.1.0`)
+- **Estado:** Aprobado
+- **Decisión:**
+  - Sustituir el disco blanco uniforme del núcleo por una proyección hemisférica 3D con oscurecimiento de limbo físico de Eddington ($I(\mu) = \mu^{0.68}$) y granulación convectiva mediante *FBM* de 4 octavas con *domain warping*.
+  - Añadir un bucle de *raymarching* radial de 28 muestras para los rayos volumétricos (*god rays*) reactivos al clic (`uKick`) y al combo de Resonancia, 5 variantes morfológicas interpoladas por era (Plasma, Estrella con manchas, Púlsar bipolar, Agujero negro luminoso con anillo de fotones y Singularidad cuántica) y el anillo de Resonancia integrado en el propio shader HDR.

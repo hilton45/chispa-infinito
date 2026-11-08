@@ -382,7 +382,8 @@ export class SceneManager {
       this.sim.state.resonanceCombo,
       maxCombo,
       this.sim.state.selectedSkinId,
-      this.quality.reduceMotion
+      this.quality.reduceMotion,
+      profile.enableGodRays
     );
 
     // Track black hole gaze for secret achievement
