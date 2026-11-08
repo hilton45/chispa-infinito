@@ -422,10 +422,10 @@ const SUB_CLOUD_VERT = `
       vColor = mix(vec3(0.65, 0.75, 1.0), vec3(1.0, 0.92, 0.78), aStarStyle.y);
     }
 
-    float ptSize = aStarStyle.x * clamp(activeScale / 18.0, 0.5, 1.6);
+    float ptSize = aStarStyle.x * clamp(activeScale / 26.0, 0.45, 1.15);
     vec2 worldPos = parent.xy + localOffset + aCorner * ptSize;
 
-    vAlpha = parent.w * (0.55 + 0.45 * aStarStyle.y);
+    vAlpha = parent.w * (0.28 + 0.32 * aStarStyle.y);
     mat3 mvp = uProjectionMatrix * uWorldTransformMatrix * uTransformMatrix;
     gl_Position = vec4((mvp * vec3(worldPos, 1.0)).xy, 0.0, 1.0);
   }
@@ -441,8 +441,8 @@ const SUB_CLOUD_FRAG = `
   void main(void) {
     float d = length(vUV);
     if (d > 1.0 || vAlpha <= 0.001) discard;
-    float glow = exp(-d * d * 4.2);
-    finalColor = vec4(vColor * (1.1 + glow * 0.6), glow * vAlpha);
+    float glow = exp(-d * d * 6.5);
+    finalColor = vec4(vColor * (0.95 + glow * 0.45), glow * vAlpha);
   }
 `;
 

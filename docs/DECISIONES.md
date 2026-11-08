@@ -85,3 +85,12 @@ Este documento registra todas las decisiones arquitectónicas, de diseño y de b
 - **Decisión:**
   - Reemplazar el dibujo 2D básico de los cuerpos orbitales por dos mallas dinámicas por lotes (`backBodiesMesh` y `frontBodiesMesh`, 1 draw call cada una) con shader GLSL dedicado para las 16 técnicas obligatorias: #1 Átomo con 3 electrones y estela de cinta de 32 segmentos, #2 Nube FBM con domain warping, #3 Protoestrella con chorros bipolares, #4 Estrella enana con granulación y erupciones, #5 Púlsar con god rays sincronizados, #6 Nebulosa 5 octavas con absorción de polvo, #7 Agujero negro con Doppler y lente de Einstein, #8 Galaxia espiral logarítmica, #9 Cúmulo galáctico, #10 Telaraña cósmica, #11 Cuásar relativista, #12 Brana con desplazamiento en el vertex shader, #13 Cuerda cósmica estacionaria, #14 Burbuja con película delgada y Fresnel, #15 Mente cósmica neuronal y #16 Chispa original recursiva de 2 niveles.
   - Añadir una nube GPU instanciada (`subCloudMesh`, 1 draw call) con `3.200` estrellas galácticas en brazos logarítmicos y `260` puntos de cúmulo galáctico animados íntegramente en el *vertex shader*.
+
+---
+
+## ADR 009 · Fase G5 (v1.1): Sistema de 50.000 Partículas Analíticas en GPU y Cielo Profundo Multicapa
+- **Fecha:** Fase G5 (`v1.1.0`)
+- **Estado:** Aprobado
+- **Decisión:**
+  - Sustituir el bucle de actualización de partículas en CPU por un sistema de `50.000` partículas en GPU (`topology: 'point-list'` en `EffectsLayer.ts`) dividido en `44.000` partículas permanentes de polvo orbital/cósmico (cuya órbita kepleriana inclinada, turbulencia armónica y colapso en el Big Bang se evalúan de forma analítica en el *vertex shader* con `0` coste de CPU) y un *ring buffer* de `6.000` ranuras para ráfagas de clic, hitos y estelas de cometas con integración analítica de rozamiento ($x(t) = x_0 + v_0 (1 - e^{-kt})/k$).
+  - Ampliar `SkyLayer.ts` a 4 capas de nebulosa con desenfoque progresivo por profundidad (de 2 a 5 octavas FBM y absorción oscura de Beer-Lambert), galaxias espirales y elípticas lejanas procedurales en el campo profundo, `270` estrellas con temperatura de color de cuerpo negro (`3.200 K` a `25.000 K`), destellos de difracción de 4/6 puntas en las más brillantes y estrellas fugaces ocasionales.

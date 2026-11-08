@@ -353,7 +353,9 @@ export class SceneManager {
       this.pointerParallaxX,
       this.pointerParallaxY,
       this.quality.reduceMotion,
-      this.constellationEdges
+      this.constellationEdges,
+      this.sim.state.currentEraIndex,
+      this.bigBangImplosion
     );
 
     this.orbitsLayer.syncWithState(this.sim.state.generators);
@@ -393,15 +395,25 @@ export class SceneManager {
     }
 
     const autoComets = this.sim.state.darkMatterUpgrades?.includes('dm_auto_comets') ?? false;
-    this.effectsLayer.update(dt, autoComets, (def, x, y) => {
-      const res = this.sim.catchComet({
-        type: def.effectType,
-        multiplier: def.multiplier,
-        duration: def.duration,
-        name: def.name,
-      });
-      this.onCometCaught?.(def, x, y, res.description);
-    });
+    this.effectsLayer.update(
+      dt,
+      autoComets,
+      (def, x, y) => {
+        const res = this.sim.catchComet({
+          type: def.effectType,
+          multiplier: def.multiplier,
+          duration: def.duration,
+          name: def.name,
+        });
+        this.onCometCaught?.(def, x, y, res.description);
+      },
+      cx,
+      cy,
+      minSide,
+      this.currentHue,
+      this.bigBangImplosion,
+      this.quality.reduceMotion
+    );
 
     const activeOrbits = Object.values(this.sim.state.generators).filter((g) => g.owned > 0).length;
     const sceneBrightness = Math.min(1.2, 0.25 + (activeOrbits / 16) * 0.65 + (this.sim.state.resonanceCombo / 30) * 0.2);
