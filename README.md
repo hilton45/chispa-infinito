@@ -2,6 +2,10 @@
 
 **Un juego incremental (idle) con gráficos en tiempo real de nivel comercial y audio generativo, construido 100 % por código (cero assets externos).**
 
+- **Demo Web en Vivo (GitHub Pages):** [https://hilton45.github.io/chispa-infinito/](https://hilton45.github.io/chispa-infinito/)
+- **Repositorio Oficial:** [https://github.com/hilton45/chispa-infinito](https://github.com/hilton45/chispa-infinito)
+- **Ejecutable Portable Windows (`.exe`):** Disponible en [Releases `v1.0.0`](https://github.com/hilton45/chispa-infinito/releases/tag/v1.0.0) o compilando localmente con `npm run build:exe`.
+
 ---
 
 ## 1. Visión General
@@ -98,10 +102,10 @@ Todos los parámetros numéricos viven desacoplados en `src/data/`:
 El proyecto ya tiene Git inicializado en la rama `main` con la etiqueta `v1.0.0` y el flujo de trabajo en [`.github/workflows/deploy.yml`](./.github/workflows/deploy.yml):
 
 ```bash
-# 1. Crea un repositorio vacío en GitHub (ej. chispa-infinito) y conéctalo:
-git remote add origin https://github.com/TU_USUARIO/chispa-infinito.git
+# 1. Conectar al repositorio oficial en GitHub:
+git remote add origin https://github.com/hilton45/chispa-infinito.git
 
-# 2. Sube el código y la etiqueta v1.0.0:
+# 2. Subir el código y la etiqueta v1.0.0:
 git push -u origin main --tags
 ```
 
