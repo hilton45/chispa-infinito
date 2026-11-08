@@ -181,19 +181,19 @@ const POST_FRAG = `
       hdrCol += bloom * uBloomStrength;
     }
 
-    // 4. Anamorphic Horizontal Lens Flares & Halo (High quality only)
+    // 4. Anamorphic Horizontal Lens Flares & Halo (High quality only, sampled from wide Kawase blur so only major light sources streak smoothly)
     if (uEnableFlares > 0.5) {
       vec3 flare = vec3(0.0);
-      for (int i = -3; i <= 3; i++) {
+      for (int i = -4; i <= 4; i++) {
         if (i == 0) continue;
         float fi = float(i);
-        vec2 fOff = vec2(fi * uTexelSize.x * 22.0, 0.0);
-        vec3 s = extractHDRBright(texture(uTexture, clamp(uv + fOff, 0.001, 0.999)).rgb);
-        float w = exp(-abs(fi) * 0.58);
+        vec2 fOff = vec2(fi * uTexelSize.x * 9.5, 0.0);
+        vec3 s = sampleKawaseLevel(clamp(uv + fOff, 0.001, 0.999), 6.5);
+        float w = exp(-abs(fi) * 0.52);
         flare += s * w;
       }
       // Tint anamorphic streak slightly warm-cyan/gold
-      hdrCol += flare * vec3(0.75, 0.90, 1.15) * 0.14;
+      hdrCol += flare * vec3(0.72, 0.88, 1.15) * 0.095;
     }
 
     // 5. Auto-Exposure & Highlight Burn toward warm incandescent white

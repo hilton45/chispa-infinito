@@ -365,7 +365,8 @@ export class SceneManager {
       minSide,
       this.currentHue,
       this.bigBangImplosion,
-      this.quality.reduceMotion
+      this.quality.reduceMotion,
+      profile.tier
     );
 
     const maxCombo = this.sim.state.darkMatterUpgrades?.includes('dm_resonance_ext')

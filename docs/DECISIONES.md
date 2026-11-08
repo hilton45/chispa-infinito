@@ -76,3 +76,12 @@ Este documento registra todas las decisiones arquitectónicas, de diseño y de b
 - **Decisión:**
   - Sustituir el disco blanco uniforme del núcleo por una proyección hemisférica 3D con oscurecimiento de limbo físico de Eddington ($I(\mu) = \mu^{0.68}$) y granulación convectiva mediante *FBM* de 4 octavas con *domain warping*.
   - Añadir un bucle de *raymarching* radial de 28 muestras para los rayos volumétricos (*god rays*) reactivos al clic (`uKick`) y al combo de Resonancia, 5 variantes morfológicas interpoladas por era (Plasma, Estrella con manchas, Púlsar bipolar, Agujero negro luminoso con anillo de fotones y Singularidad cuántica) y el anillo de Resonancia integrado en el propio shader HDR.
+
+---
+
+## ADR 008 · Fase G4 (v1.1): Los 16 Cuerpos Orbitales con Shaders Propios e Instanciación GPU
+- **Fecha:** Fase G4 (`v1.1.0`)
+- **Estado:** Aprobado
+- **Decisión:**
+  - Reemplazar el dibujo 2D básico de los cuerpos orbitales por dos mallas dinámicas por lotes (`backBodiesMesh` y `frontBodiesMesh`, 1 draw call cada una) con shader GLSL dedicado para las 16 técnicas obligatorias: #1 Átomo con 3 electrones y estela de cinta de 32 segmentos, #2 Nube FBM con domain warping, #3 Protoestrella con chorros bipolares, #4 Estrella enana con granulación y erupciones, #5 Púlsar con god rays sincronizados, #6 Nebulosa 5 octavas con absorción de polvo, #7 Agujero negro con Doppler y lente de Einstein, #8 Galaxia espiral logarítmica, #9 Cúmulo galáctico, #10 Telaraña cósmica, #11 Cuásar relativista, #12 Brana con desplazamiento en el vertex shader, #13 Cuerda cósmica estacionaria, #14 Burbuja con película delgada y Fresnel, #15 Mente cósmica neuronal y #16 Chispa original recursiva de 2 niveles.
+  - Añadir una nube GPU instanciada (`subCloudMesh`, 1 draw call) con `3.200` estrellas galácticas en brazos logarítmicos y `260` puntos de cúmulo galáctico animados íntegramente en el *vertex shader*.
