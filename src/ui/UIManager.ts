@@ -22,9 +22,11 @@ import {
   CONSTELLATIONS,
   OBSERVER_QUOTES,
   ENCYCLOPEDIA_ENTRIES,
+  ERA_ENCYCLOPEDIA_ENTRIES,
   MISSIONS,
   STORY_CHAPTERS,
   generateEncyclopediaSVG,
+  generateEraSVG,
 } from '@/data/extendedLayers';
 import { getCurrentWeeklyEvent } from '@/data/comets';
 import {
@@ -58,6 +60,7 @@ export class UIManager {
   public activeTab: TabId = 'generators';
   public buyMode: 1 | 10 | 100 | 'max' = 1;
   public numberMode: 'standard' | 'scientific' = 'standard';
+  public textScale: 100 | 110 | 125 = 100;
   public isPaused = false;
   public isZenMode = false;
   public timeScale = 1;
@@ -70,6 +73,7 @@ export class UIManager {
 
   // DOM References
   private rootEl!: HTMLElement;
+  private tutorialCoreHintEl!: HTMLElement;
   private eraBadgeEl!: HTMLElement;
   private energyValEl!: HTMLElement;
   private spsValEl!: HTMLElement;
@@ -186,11 +190,17 @@ export class UIManager {
       <p id="era-banner-quote"></p>
     `;
 
+    const tutorialCoreHint = document.createElement('div');
+    tutorialCoreHint.id = 'tutorial-core-hint';
+    tutorialCoreHint.textContent = '✦ Haz clic en la chispa';
+
     this.rootEl.appendChild(hud);
     this.rootEl.appendChild(sidePanel);
     this.rootEl.appendChild(ticker);
     this.rootEl.appendChild(toastContainer);
     this.rootEl.appendChild(eraBanner);
+    this.rootEl.appendChild(tutorialCoreHint);
+    this.tutorialCoreHintEl = tutorialCoreHint;
 
     // Cache DOM refs
     this.eraBadgeEl = document.getElementById('hud-era-badge')!;
@@ -1197,6 +1207,47 @@ export class UIManager {
       }
       this.panelContentEl.appendChild(card);
     }
+
+    // 16 Cosmic Eras Encyclopedia Entries
+    const erasHeader = document.createElement('div');
+    erasHeader.className = 'section-box';
+    erasHeader.innerHTML = `
+      <div class="section-title">Atlas de las 16 Eras Cósmicas</div>
+      <p style="font-size: 0.8rem; color: var(--text-muted);">
+        Épocas cosmológicas y regímenes físicos reales que atraviesa tu universo a medida que crece su energía.
+      </p>
+    `;
+    this.panelContentEl.appendChild(erasHeader);
+
+    for (const eraEntry of ERA_ENCYCLOPEDIA_ENTRIES) {
+      const eraDef = ERAS[eraEntry.eraIndex] ?? ERAS[0];
+      const unlocked = s.currentEraIndex >= eraEntry.eraIndex || s.bigBangsTotal >= 1;
+      const card = document.createElement('div');
+      card.className = `section-box ${unlocked ? '' : 'gen-card mystery'}`;
+      if (!unlocked) {
+        card.innerHTML = `
+          <div class="section-title">Era #${eraEntry.eraIndex + 1} · ???</div>
+          <div class="gen-desc">Alcanza ${this.fmt(eraDef.energyThreshold)} de energía total para revelar esta época cosmológica.</div>
+        `;
+      } else {
+        const eraSvg = generateEraSVG(eraEntry.eraIndex, eraDef.hue);
+        card.innerHTML = `
+          <div style="display:flex; gap:12px; align-items:flex-start; margin-bottom:8px;">
+            ${eraSvg}
+            <div>
+              <div class="section-title" style="margin-bottom:2px;">${eraEntry.name}</div>
+              <div style="font-size: 0.75rem; color: var(--accent-bright);">«${eraDef.quote}»</div>
+            </div>
+          </div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 6px; display: grid; gap: 2px;">
+            <span>• <strong>Época real:</strong> ${eraEntry.epochReal}</span>
+            <span>• <strong>Régimen térmico/energético:</strong> ${eraEntry.temperatureReal}</span>
+          </div>
+          <p style="font-size: 0.78rem; color: #e2e8f0;">${eraEntry.scientificSummary}</p>
+        `;
+      }
+      this.panelContentEl.appendChild(card);
+    }
   }
 
   private renderSettingsTab(): void {
@@ -1223,6 +1274,20 @@ export class UIManager {
           </div>
         </div>
         <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span>Tamaño de Texto (Accesibilidad):</span>
+          <div class="buy-mode-group">
+            ${([100, 110, 125] as const)
+              .map(
+                (sc) => `
+              <button class="buy-mode-btn ${this.textScale === sc ? 'active' : ''}" data-textscale="${sc}">
+                ${sc}%
+              </button>
+            `
+              )
+              .join('')}
+          </div>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
           <span>Modo Ahorro de Batería / Reducir Movimiento:</span>
           <button class="buy-mode-btn ${this.scene.quality.reduceMotion ? 'active' : ''}" id="btn-toggle-motion">
             ${this.scene.quality.reduceMotion ? 'Activado' : 'Desactivado'}
@@ -1233,6 +1298,18 @@ export class UIManager {
           <button class="buy-mode-btn ${!this.audio.muted ? 'active' : ''}" id="btn-toggle-mute">
             ${this.audio.muted ? 'Silenciado' : 'Activo'}
           </button>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <label for="slider-vol-master">Volumen Maestro (${Math.round(this.audio.masterVolume * 100)}%):</label>
+          <input id="slider-vol-master" class="volume-slider" type="range" min="0" max="100" value="${Math.round(this.audio.masterVolume * 100)}" />
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <label for="slider-vol-music">Volumen Música Ambiental (${Math.round(this.audio.musicVolume * 100)}%):</label>
+          <input id="slider-vol-music" class="volume-slider" type="range" min="0" max="100" value="${Math.round(this.audio.musicVolume * 100)}" />
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <label for="slider-vol-sfx">Volumen Efectos SFX (${Math.round(this.audio.sfxVolume * 100)}%):</label>
+          <input id="slider-vol-sfx" class="volume-slider" type="range" min="0" max="100" value="${Math.round(this.audio.sfxVolume * 100)}" />
         </div>
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <span>Notación Numérica:</span>
@@ -1256,6 +1333,39 @@ export class UIManager {
         this.scene.quality.setSetting(q);
         this.renderSettingsTab();
       });
+    });
+
+    box.querySelectorAll('[data-textscale]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const sc = Number((btn as HTMLElement).dataset.textscale) as 100 | 110 | 125;
+        this.textScale = sc;
+        document.documentElement.style.fontSize = `${sc}%`;
+        this.renderSettingsTab();
+      });
+    });
+
+    document.getElementById('slider-vol-master')?.addEventListener('input', (e) => {
+      this.audio.masterVolume = Number((e.target as HTMLInputElement).value) / 100;
+      this.audio.syncVolumes();
+    });
+    document.getElementById('slider-vol-master')?.addEventListener('change', () => {
+      this.renderSettingsTab();
+    });
+
+    document.getElementById('slider-vol-music')?.addEventListener('input', (e) => {
+      this.audio.musicVolume = Number((e.target as HTMLInputElement).value) / 100;
+      this.audio.syncVolumes();
+    });
+    document.getElementById('slider-vol-music')?.addEventListener('change', () => {
+      this.renderSettingsTab();
+    });
+
+    document.getElementById('slider-vol-sfx')?.addEventListener('input', (e) => {
+      this.audio.sfxVolume = Number((e.target as HTMLInputElement).value) / 100;
+      this.audio.syncVolumes();
+    });
+    document.getElementById('slider-vol-sfx')?.addEventListener('change', () => {
+      this.renderSettingsTab();
     });
 
     document.getElementById('btn-toggle-motion')?.addEventListener('click', () => {
@@ -1451,6 +1561,12 @@ export class UIManager {
     if (this.sim.isConsciousnessUnlocked()) {
       this.observerCardEl.style.display = 'flex';
     }
+
+    // Visual micro-tutorial for very first click
+    if (this.tutorialCoreHintEl) {
+      const showCoreHint = s.totalClicks === 0 && s.totalEnergyProduced.eq(0) && s.bigBangsTotal === 0;
+      this.tutorialCoreHintEl.classList.toggle('hidden', !showCoreHint);
+    }
   }
 
   private updateGeneratorsLiveAffordability(): void {
@@ -1470,6 +1586,8 @@ export class UIManager {
       const canAfford = s.energy.gte(cost);
       btn.disabled = !canAfford;
       btn.classList.toggle('affordable', canAfford);
+      const isFirstAtomTutorial = genId === 'atom' && owned === 0 && canAfford && s.bigBangsTotal === 0;
+      btn.classList.toggle('tutorial-beacon', isFirstAtomTutorial);
     });
   }
 }

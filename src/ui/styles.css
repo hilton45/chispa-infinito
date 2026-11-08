@@ -759,4 +759,73 @@ body.zen-active .hud-card .rates-row {
     left: 50%;
     top: 32%;
   }
+
+  #tutorial-core-hint {
+    left: 50%;
+    top: 52%;
+  }
 }
+
+/* Visual Micro-Tutorial (First Click & First Atom) */
+#tutorial-core-hint {
+  position: absolute;
+  left: 36%;
+  top: 63%;
+  transform: translate(-50%, -50%);
+  z-index: 22;
+  pointer-events: none;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  color: #ffffff;
+  background: rgba(8, 12, 28, 0.78);
+  border: 1px solid var(--accent-bright);
+  padding: 6px 14px;
+  border-radius: 999px;
+  box-shadow: 0 0 20px var(--accent-dim);
+  animation: tutorialPulse 1.8s ease-in-out infinite;
+  transition: opacity 0.4s ease;
+}
+
+#tutorial-core-hint.hidden {
+  opacity: 0;
+}
+
+.gen-card.tutorial-beacon {
+  border-color: var(--gold) !important;
+  box-shadow: 0 0 22px rgba(253, 224, 71, 0.45) !important;
+  animation: tutorialPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes tutorialPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.03);
+  }
+}
+
+/* Custom Range Sliders for Audio Mixer */
+.volume-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 130px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  outline: none;
+  cursor: pointer;
+}
+
+.volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent-bright);
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 10px var(--accent);
+}
+

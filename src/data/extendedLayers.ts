@@ -468,4 +468,166 @@ export const STORY_CHAPTERS: StoryChapter[] = [
   },
 ];
 
+export interface EraEncyclopediaEntry {
+  eraIndex: number;
+  name: string;
+  epochReal: string;
+  temperatureReal: string;
+  scientificSummary: string;
+}
+
+export const ERA_ENCYCLOPEDIA_ENTRIES: EraEncyclopediaEntry[] = [
+  {
+    eraIndex: 0,
+    name: '1. Era del Plasma',
+    epochReal: '0 a 380.000 años tras el Big Bang',
+    temperatureReal: '10^12 K → 3.000 K',
+    scientificSummary:
+      'Antes de la recombinación, el universo era un plasma opaco de fotones, protones y electrones acoplados por dispersión Thomson.',
+  },
+  {
+    eraIndex: 1,
+    name: '2. Era Estelar',
+    epochReal: '~100–400 millones de años (z ≈ 20)',
+    temperatureReal: '10^7 K en núcleos de Población III',
+    scientificSummary:
+      'El colapso de halos de hidrógeno primordial encendió las primeras estrellas masivas sin metales, terminando la Edad Oscura cósmica.',
+  },
+  {
+    eraIndex: 2,
+    name: '3. Era de las Nebulosas',
+    epochReal: '~1.000 millones de años en adelante',
+    temperatureReal: '10 K (nubes moleculares) a 10.000 K (regiones H II)',
+    scientificSummary:
+      'Las primeras supernovas enriquecieron el medio interestelar con carbono, oxígeno y silicio, formando nebulosas de emisión y reflexión.',
+  },
+  {
+    eraIndex: 3,
+    name: '4. Era Galáctica',
+    epochReal: '~2.000–6.000 millones de años (pico en z ≈ 2)',
+    temperatureReal: 'Medios galácticos de 10^4 a 10^6 K',
+    scientificSummary:
+      'Las proto-galaxias se fusionaron jerárquicamente formando discos espirales y galaxias elípticas gobernadas por agujeros negros supermasivos.',
+  },
+  {
+    eraIndex: 4,
+    name: '5. Era Cósmica',
+    epochReal: '~6.000–13.800 millones de años',
+    temperatureReal: 'Fondo cósmico de microondas a 2,725 K',
+    scientificSummary:
+      'La materia bariónica y oscura se organizó en la gran red cósmica de filamentos, paredes y supercúmulos como Laniakea.',
+  },
+  {
+    eraIndex: 5,
+    name: '6. Era Eterna',
+    epochReal: '> 10^14 años (Horizonte Estelar Tardío)',
+    temperatureReal: 'Enanas rojas a ~2.500 K durante billones de años',
+    scientificSummary:
+      'Las estrellas de baja masa consumen su hidrógeno por convección completa, manteniendo encendida la luz del cosmos durante billones de años.',
+  },
+  {
+    eraIndex: 6,
+    name: '7. Era del Multiverso',
+    epochReal: 'Escala de Inflación Eterna (Linde / Guth)',
+    temperatureReal: 'Fluctuaciones cuánticas a escala de Planck (~10^32 K)',
+    scientificSummary:
+      'En los modelos de inflación caótica eterna, distintas regiones del falso vacío decaen en universos burbuja desconectados causalmente.',
+  },
+  {
+    eraIndex: 7,
+    name: '8. Era de la Conciencia',
+    epochReal: 'Principio Antrópico Participativo (Wheeler)',
+    temperatureReal: 'Sistemas complejos fuera del equilibrio térmico',
+    scientificSummary:
+      'La materia organizada alcanza complejidad autorreferencial capaz de medir constantes físicas y reconstruir la historia cosmológica.',
+  },
+  {
+    eraIndex: 8,
+    name: '9. Era de la Singularidad',
+    epochReal: 'Límite de Bekenstein-Hawking',
+    temperatureReal: 'Temperatura de Hawking T = ħc³ / (8πGMk_B)',
+    scientificSummary:
+      'La densidad máxima de información cuántica se codifica en la superficie de los horizontes de sucesos según el principio holográfico.',
+  },
+  {
+    eraIndex: 9,
+    name: '10. Era de la Inflación Cuántica',
+    epochReal: '10^-36 a 10^-32 segundos',
+    temperatureReal: '~10^27 K (Gran Unificación)',
+    scientificSummary:
+      'El campo inflatón expandió el factor de escala del universo en al menos e^60 veces, alisando la geometría espacial.',
+  },
+  {
+    eraIndex: 10,
+    name: '11. Era de las Dimensiones Extra',
+    epochReal: 'Compactificación de Calabi-Yau (10^-35 m)',
+    temperatureReal: 'Energía de Planck (~1,22 × 10^19 GeV)',
+    scientificSummary:
+      'En teoría de supercuerdas y teoría M, seis o siete dimensiones espaciales adicionales permanecen compactadas a escala subatómica.',
+  },
+  {
+    eraIndex: 11,
+    name: '12. Era de la Resonancia',
+    epochReal: 'Cosmología Cíclica de Branas (Ekpirótica)',
+    temperatureReal: 'Modos vibracionales armónicos fundamentales',
+    scientificSummary:
+      'Los grados de libertad de las cuerdas fundamentales determinan la masa y carga de cada fermión y bosón del Modelo Estándar.',
+  },
+  {
+    eraIndex: 12,
+    name: '13. Era de la Red Primordial',
+    epochReal: 'Gravedad Cuántica de Bucles (Espuma de Espín)',
+    temperatureReal: 'Cuantos de área ~10^-70 m²',
+    scientificSummary:
+      'A escala microscópica, el propio espacio-tiempo emerge de una red discreta de nodos y enlaces cuánticos entrelazados.',
+  },
+  {
+    eraIndex: 13,
+    name: '14. Era de la Frecuencia Omega',
+    epochReal: 'Cosmología Cíclica Conforme (Penrose)',
+    temperatureReal: 'Invariancia conforme de fotones sin masa',
+    scientificSummary:
+      'Cuando toda la masa se disipa en radiación, el futuro infinito pierde su escala métrica y se vuelve geométricamente equivalente a un nuevo Big Bang.',
+  },
+  {
+    eraIndex: 14,
+    name: '15. Era del Horizonte Infinito',
+    epochReal: 'Espacio de De Sitter Asintótico',
+    temperatureReal: 'Horizonte cosmológico de Gibbons-Hawking',
+    scientificSummary:
+      'La constante cosmológica Λ domina la métrica espacial, estabilizando un horizonte de eventos cósmico con entropía máxima.',
+  },
+  {
+    eraIndex: 15,
+    name: '16. Era de la Chispa Suprema',
+    epochReal: 'Unificación Completa de Campos (TOE)',
+    temperatureReal: 'Simetría perfecta restaurada',
+    scientificSummary:
+      'Las cuatro interacciones fundamentales —gravedad, electromagnetismo, nuclear fuerte y débil— convergen de nuevo en una única fuerza primordial.',
+  },
+];
+
+export function generateEraSVG(eraIndex: number, hue: number): string {
+  const hue2 = (hue + 45) % 360;
+  const rays = 4 + (eraIndex % 8);
+  let lines = '';
+  for (let i = 0; i < rays; i++) {
+    const a = (i * Math.PI) / (rays / 2);
+    const x1 = (40 + Math.cos(a) * 10).toFixed(1);
+    const y1 = (40 + Math.sin(a) * 10).toFixed(1);
+    const x2 = (40 + Math.cos(a) * 32).toFixed(1);
+    const y2 = (40 + Math.sin(a) * 32).toFixed(1);
+    lines += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="hsla(${hue2},95%,72%,0.6)" stroke-width="1.5"/>`;
+  }
+  return `
+    <svg viewBox="0 0 80 80" width="54" height="54" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0; border-radius:12px; background:radial-gradient(circle, hsla(${hue},95%,26%,0.65), #05040f); border:1px solid hsla(${hue},95%,65%,0.4);">
+      ${lines}
+      <circle cx="40" cy="40" r="22" fill="none" stroke="hsla(${hue},95%,68%,0.45)" stroke-width="1.3"/>
+      <circle cx="40" cy="40" r="9" fill="hsl(${hue},95%,65%)"/>
+      <circle cx="40" cy="40" r="4" fill="#ffffff"/>
+    </svg>
+  `;
+}
+
+
 

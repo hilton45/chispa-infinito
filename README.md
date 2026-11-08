@@ -79,11 +79,12 @@ scripts/
   simulate.ts  Bot de simulación económica que valida los tiempos de las metas de ritmo
 tests/
   unit/    Suites Vitest para economía, simulación, capas 2-5 y persistencia
+  e2e/     Suite E2E (Playwright) y captura automatizada de las vistas A–G
 ```
 
 ---
 
-## 5. Cómo Ajustar el Balance
+## 6. Cómo Ajustar el Balance
 
 Todos los parámetros numéricos viven desacoplados en `src/data/`:
 1. Edita costes o producciones base en [`src/data/generators.ts`](./src/data/generators.ts) o mejoras en [`src/data/upgrades.ts`](./src/data/upgrades.ts).
@@ -92,6 +93,25 @@ Todos los parámetros numéricos viven desacoplados en `src/data/`:
 
 ---
 
-## 6. Licencia
+## 7. Cómo Subirlo a GitHub y Desplegar en GitHub Pages
+
+El proyecto ya tiene Git inicializado en la rama `main` con la etiqueta `v1.0.0` y el flujo de trabajo en [`.github/workflows/deploy.yml`](./.github/workflows/deploy.yml):
+
+```bash
+# 1. Crea un repositorio vacío en GitHub (ej. chispa-infinito) y conéctalo:
+git remote add origin https://github.com/TU_USUARIO/chispa-infinito.git
+
+# 2. Sube el código y la etiqueta v1.0.0:
+git push -u origin main --tags
+```
+
+Para activar la demo automática en **GitHub Pages**:
+1. En tu repositorio de GitHub, entra en **Settings → Pages**.
+2. En **Build and deployment → Source**, elige **GitHub Actions**.
+3. El workflow `CI & Deploy CHISPA ∞` compilará, ejecutará las pruebas y publicará la PWA automáticamente.
+
+---
+
+## 8. Licencia
 
 Distribuido bajo la licencia **MIT**. Consulta [`LICENSE`](./LICENSE) para más detalles.
