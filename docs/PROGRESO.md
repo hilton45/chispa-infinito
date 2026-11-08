@@ -11,8 +11,8 @@
 | **Fase 7** | Audio procedimental y pulido (Síntesis WebAudio, post-proceso Pixi v8, cinematografía) | **Completado** | 2026-11-08 | 2026-11-08 | Sintetizador pentatónico + pad ambiental generativo, Bloom + Lente Gravitacional |
 | **Fase 8** | QA final, PWA, Auditorías y Entrega | **Completado** | 2026-11-08 | 2026-11-08 | 20/20 tests unitarios en verde, E2E + 7 capturas A–G (166 FPS), PWA offline, docs y CI listos |
 | **Fase G1** | Correcciones de interfaz, lógica y panel F3 (`v1.1`) | **Completado** | 2026-11-08 | 2026-11-08 | Pestañas con sombras y sin cortes, HUD móvil 2 líneas, cola de logros, mejoras de clic por era y tests en verde |
-| **Fase G2** | Pipeline de luz HDR, Dual Kawase Bloom, ACES y color por era | **En progreso** | 2026-11-08 | — | Ningún disco blanco plano; sin bandas en el cielo; capturas «DESPUÉS» claramente mejores |
-| **Fase G3** | Núcleo «Chispa» con detalle y variantes por era | Pendiente | — | — | Cada era tiene su núcleo con textura FBM, corona, god rays y variantes |
+| **Fase G2** | Pipeline de luz HDR, Dual Kawase Bloom, ACES y color por era | **Completado** | 2026-11-08 | 2026-11-08 | Bloom físico 5 niveles, ACES, auto-exposición 1 s, dithering 1 LSB y color por era |
+| **Fase G3** | Núcleo «Chispa» con detalle y variantes por era | **En progreso** | 2026-11-08 | — | Cada era tiene su núcleo con textura FBM, corona, god rays y variantes |
 | **Fase G4** | 16 cuerpos con shader propio e instanciación | Pendiente | — | — | Los 16 se distinguen a simple vista y mantienen ≥ 55 fps en Alta |
 | **Fase G5** | Partículas en GPU (50.000) y cielo en capas | Pendiente | — | — | 50.000 partículas en Alta sin caída de fps; paralaje y estrellas con temperatura |
 | **Fase G6** | Cinemática (Big Bang con cámara lenta y onda de choque, eras, cometas) | Pendiente | — | — | Big Bang y cambio de era completos, con cámara lenta y distorsión |

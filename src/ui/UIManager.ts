@@ -320,6 +320,7 @@ export class UIManager {
       this.audio.playClick(res.resonanceCombo / maxCombo);
       this.spawnFloatingNumber(x, y, `+${this.fmt(res.energyGained)}`);
       this.updateHUD();
+      this.updateGeneratorsLiveAffordability();
     };
 
     this.scene.onCometCaught = (def, x, y, description) => {

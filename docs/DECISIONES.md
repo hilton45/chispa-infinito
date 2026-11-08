@@ -58,3 +58,12 @@ Este documento registra todas las decisiones arquitectónicas, de diseño y de b
   - Hacer que el HUD móvil inicie en modo compacto de 2 líneas (`.hud-collapsed`: línea 1 con energía y tasa de producción; línea 2 con siguiente objetivo y barra de progreso) para que el núcleo ocupe `>= 25 %` del ancho en pantallas de `390×844`.
   - Sustituir el descarte inmediato de notificaciones por una cola FIFO (`toastQueue`) con máximo 2 avisos simultáneos (1 en móvil).
   - Añadir mejoras de clic (`echo_4` a `echo_6`) con porcentaje creciente del SPS (`+5 %`, `+10 %`, `+20 %`) y multiplicador compuesto por era (`1.15^eraIndex`), más panel de diagnóstico `F3` en tiempo real.
+
+---
+
+## ADR 006 · Fase G2 (v1.1): Pipeline de Luz HDR, Dual Kawase 5 Niveles, ACES y Dithering 1 LSB
+- **Fecha:** Fase G2 (`v1.1.0`)
+- **Estado:** Aprobado
+- **Decisión:**
+  - Implementar extracción de altas luces HDR con umbral suave (*soft knee*) y pirámide *Dual Kawase* de 5 niveles en calidad Alta (3 en Media, 0 en Baja), quemando los picos de luminancia hacia blanco cálido antes de aplicar la curva fílmica ACES de Narkowicz.
+  - Incorporar exposición automática suave con constante de inercia de `1.0 s`, destellos de lente anamórficos horizontales en calidad Alta, corrección de color por era (sombras, luces y contraste interpolados durante `3.0 s`) y *dithering* de ruido de gradiente intercalado (IGN) de 1 LSB (`±0.5/255`) para eliminar bandas en el cielo oscuro.

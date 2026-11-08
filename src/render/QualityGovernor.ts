@@ -5,38 +5,54 @@ export interface QualityProfile {
   tier: ActiveQualityTier;
   maxParticles: number;
   resolutionScale: number;
+  bloomLevels: number;
+  hdrEnabled: boolean;
   enableBloom: boolean;
   enableLensing: boolean;
   enableChromatic: boolean;
+  enableFlares: boolean;
+  enableGodRays: boolean;
   enableGrain: boolean;
 }
 
 export const QUALITY_PROFILES: Record<ActiveQualityTier, QualityProfile> = {
   high: {
     tier: 'high',
-    maxParticles: 3000,
+    maxParticles: 50000,
     resolutionScale: 1.0,
+    bloomLevels: 5,
+    hdrEnabled: true,
     enableBloom: true,
     enableLensing: true,
     enableChromatic: true,
+    enableFlares: true,
+    enableGodRays: true,
     enableGrain: true,
   },
   medium: {
     tier: 'medium',
-    maxParticles: 1200,
+    maxParticles: 15000,
     resolutionScale: 0.75,
+    bloomLevels: 3,
+    hdrEnabled: false,
     enableBloom: true,
     enableLensing: false,
     enableChromatic: false,
-    enableGrain: false,
+    enableFlares: false,
+    enableGodRays: false,
+    enableGrain: true,
   },
   low: {
     tier: 'low',
-    maxParticles: 400,
+    maxParticles: 3000,
     resolutionScale: 0.5,
+    bloomLevels: 0,
+    hdrEnabled: false,
     enableBloom: false,
     enableLensing: false,
     enableChromatic: false,
+    enableFlares: false,
+    enableGodRays: false,
     enableGrain: false,
   },
 };

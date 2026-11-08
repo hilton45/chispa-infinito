@@ -68,6 +68,18 @@ export class SceneManager {
   public async init(hostElement: HTMLElement): Promise<void> {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
+    // Probe WebGPU availability; use WebGL2 when custom GLSL shaders are active so fallback is seamless
+    let hasWebGPU = false;
+    try {
+      if (typeof navigator !== 'undefined' && (navigator as any).gpu) {
+        const adapter = await (navigator as any).gpu.requestAdapter();
+        hasWebGPU = !!adapter;
+      }
+    } catch {
+      hasWebGPU = false;
+    }
+    (this as any)._webgpuAvailable = hasWebGPU;
+
     await this.app.init({
       resizeTo: hostElement,
       backgroundColor: 0x05040f,
@@ -76,6 +88,18 @@ export class SceneManager {
       autoDensity: true,
       preference: 'webgl',
     });
+
+    // Enable floating-point / half-float texture extensions on WebGL2 for HDR pipeline
+    try {
+      const gl = (this.app.renderer as any)?.gl as WebGL2RenderingContext | undefined;
+      if (gl && typeof gl.getExtension === 'function') {
+        gl.getExtension('EXT_color_buffer_float');
+        gl.getExtension('EXT_color_buffer_half_float');
+        gl.getExtension('OES_texture_float_linear');
+      }
+    } catch {
+      // Fallback to compressed HDR in rgba8 seamlessly
+    }
 
     hostElement.appendChild(this.app.canvas);
 
@@ -194,9 +218,12 @@ export class SceneManager {
         this.effectsLayer.spawnShockwave(cx, cy, minSide * 0.35, accentHex, 0.6, 2.5);
         this.effectsLayer.spawnBurst(cx, cy, 20, accentHex, 160, 0.7, 2.5);
       } else if (event === 'milestone') {
+        const w = Math.max(1, this.app.screen.width);
+        const h = Math.max(1, this.app.screen.height);
         this.effectsLayer.spawnShockwave(cx, cy, minSide * 0.55, 0xfde047, 0.85, 4.0);
         this.effectsLayer.spawnBurst(cx, cy, 45, 0xfde047, 280, 0.95, 3.2);
         this.postProcess.triggerChromaticPulse(0.005);
+        this.postProcess.triggerShockwaveDistortion(cx / w, cy / h, 0.011, 0.85);
         if (!this.quality.reduceMotion) {
           this.shakeIntensity = 6.0;
         }
@@ -210,6 +237,7 @@ export class SceneManager {
           this.targetCameraZoom = 1.0;
         }, 1400);
         this.postProcess.triggerChromaticPulse(0.004);
+        this.postProcess.triggerEraBloomPulse();
       }
     });
   }
@@ -373,6 +401,9 @@ export class SceneManager {
       this.onCometCaught?.(def, x, y, res.description);
     });
 
+    const activeOrbits = Object.values(this.sim.state.generators).filter((g) => g.owned > 0).length;
+    const sceneBrightness = Math.min(1.2, 0.25 + (activeOrbits / 16) * 0.65 + (this.sim.state.resonanceCombo / 30) * 0.2);
+
     this.postProcess.update(
       dt,
       this.elapsedSeconds,
@@ -380,7 +411,9 @@ export class SceneManager {
       this.quality.reduceMotion,
       this.orbitsLayer.blackHoleScreenPos,
       this.app.screen.width,
-      this.app.screen.height
+      this.app.screen.height,
+      this.sim.state.currentEraIndex,
+      sceneBrightness
     );
   }
 }

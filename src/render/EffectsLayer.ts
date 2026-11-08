@@ -85,7 +85,7 @@ export class EffectsLayer {
   }
 
   public setMaxParticles(limit: number): void {
-    this.maxActiveParticles = Math.max(100, Math.min(50000, limit));
+    this.maxActiveParticles = Math.max(100, Math.min(this.particles.length, limit));
   }
 
   public getActiveParticleCount(): number {
