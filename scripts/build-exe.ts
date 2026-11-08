@@ -320,7 +320,7 @@ function buildWindowsExe(): void {
   // Also package a portable release folder + ZIP for easy distribution / GitHub Releases
   const releaseDir = resolve(rootDir, 'release');
   const portableDir = resolve(releaseDir, 'CHISPA-Infinito-Portable');
-  const zipPath = resolve(releaseDir, 'CHISPA-Infinito-Windows-v1.0.0.zip');
+  const zipPath = resolve(releaseDir, 'CHISPA-Infinito-Windows-v1.1.0.zip');
 
   if (existsSync(portableDir)) {
     rmSync(portableDir, { recursive: true, force: true });
