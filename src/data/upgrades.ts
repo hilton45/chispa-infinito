@@ -107,11 +107,14 @@ export function generateAllUpgrades(): UpgradeDefinition[] {
     });
   }
 
-  // 3. Echo upgrades (3 tiers: click gains % of passive SPS)
+  // 3. Echo upgrades (6 tiers: click gains growing % of passive SPS across eras)
   const echoUpgradesData = [
     { id: 'echo_1', name: 'Eco Armónico I', percent: 0.01, desc: 'Los clics ganan un +1% de tu producción por segundo.', cost: D(8_000), genId: 'atom', count: 15 },
     { id: 'echo_2', name: 'Eco Armónico II', percent: 0.02, desc: 'Los clics ganan un +2% adicional de tu producción por segundo.', cost: D(350_000), genId: 'dwarf_star', count: 15 },
     { id: 'echo_3', name: 'Eco Armónico III', percent: 0.03, desc: 'Los clics ganan un +3% adicional de tu producción por segundo.', cost: D(80_000_000), genId: 'galaxy', count: 15 },
+    { id: 'echo_4', name: 'Pulso de Cuásar IV', percent: 0.05, desc: 'Los clics ganan un +5% adicional de tu producción por segundo y escalan por era.', cost: D(5e11), genId: 'quasar', count: 5 },
+    { id: 'echo_5', name: 'Convergencia de Brana V', percent: 0.10, desc: 'Los clics ganan un +10% adicional de tu producción por segundo.', cost: D(1e15), genId: 'brane', count: 5 },
+    { id: 'echo_6', name: 'Mano del Génesis VI', percent: 0.20, desc: 'Los clics ganan un +20% adicional de tu producción por segundo.', cost: D(1e20), genId: 'cosmic_mind', count: 5 },
   ];
 
   for (const eu of echoUpgradesData) {

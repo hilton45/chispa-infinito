@@ -47,3 +47,14 @@ Este documento registra todas las decisiones arquitectónicas, de diseño y de b
 - **Decisión:**
   - El motor `AudioEngine.ts` sintetiza todos los efectos en tiempo real usando la escala pentatónica mayor acoplada al combo de Resonancia y genera acordes ambientales cuyos fundamentales evolucionan según la era activa, protegidos por un `DynamicsCompressorNode` y un límite estricto de 16 voces simultáneas.
   - El `SaveManager.ts` mantiene doble ranura en `localStorage` (`primary` y `backup` rotativo) y exporta cadenas con cabecera `CHISPA2:<checksum-fnv1a>:<base64>` para impedir corrupción o importaciones truncadas.
+
+---
+
+## ADR 005 · Fase G1 (v1.1): HUD Compacto en 2 Líneas, Cola de Logros, Escalado de Clic y Panel F3
+- **Fecha:** Fase G1 (`v1.1.0`)
+- **Estado:** Aprobado
+- **Decisión:**
+  - Envolver `.tabs-nav` en `.tabs-nav-wrapper` con sombras de borde dinámicas (`.has-scroll-left` / `.has-scroll-right`) y `scroll-behavior: smooth`, eliminando cualquier corte de texto en pestañas.
+  - Hacer que el HUD móvil inicie en modo compacto de 2 líneas (`.hud-collapsed`: línea 1 con energía y tasa de producción; línea 2 con siguiente objetivo y barra de progreso) para que el núcleo ocupe `>= 25 %` del ancho en pantallas de `390×844`.
+  - Sustituir el descarte inmediato de notificaciones por una cola FIFO (`toastQueue`) con máximo 2 avisos simultáneos (1 en móvil).
+  - Añadir mejoras de clic (`echo_4` a `echo_6`) con porcentaje creciente del SPS (`+5 %`, `+10 %`, `+20 %`) y multiplicador compuesto por era (`1.15^eraIndex`), más panel de diagnóstico `F3` en tiempo real.

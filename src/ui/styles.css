@@ -294,13 +294,49 @@ body {
   transition: opacity 0.4s ease, transform 0.4s ease;
 }
 
+.tabs-nav-wrapper {
+  position: relative;
+  margin: 0 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.tabs-nav-wrapper::before,
+.tabs-nav-wrapper::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 6px;
+  width: 28px;
+  pointer-events: none;
+  z-index: 3;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.tabs-nav-wrapper::before {
+  left: 0;
+  background: linear-gradient(90deg, rgba(9, 8, 24, 0.96) 15%, transparent 100%);
+}
+
+.tabs-nav-wrapper::after {
+  right: 0;
+  background: linear-gradient(270deg, rgba(9, 8, 24, 0.96) 15%, transparent 100%);
+}
+
+.tabs-nav-wrapper.has-scroll-left::before {
+  opacity: 1;
+}
+
+.tabs-nav-wrapper.has-scroll-right::after {
+  opacity: 1;
+}
+
 .tabs-nav {
   display: flex;
   overflow-x: scroll;
+  scroll-behavior: smooth;
   gap: 6px;
   padding: 8px 0 8px 0;
-  margin: 0 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
   background: transparent;
   scroll-snap-type: x mandatory;
 }
@@ -327,7 +363,7 @@ body {
   flex: 0 0 calc((100% - 24px) / 5);
   scroll-snap-align: start;
   min-height: 38px;
-  padding: 5px 4px;
+  padding: 5px 6px;
   border-radius: 10px;
   border: 1px solid transparent;
   background: rgba(255, 255, 255, 0.03);
@@ -612,13 +648,6 @@ body {
   display: none;
 }
 
-/* Collapsible HUD support (especially for mobile) */
-#hud-container.hud-collapsed .buffs-row,
-#hud-container.hud-collapsed .next-goal-box,
-#hud-container.hud-collapsed .observer-card {
-  display: none !important;
-}
-
 .toast-item {
   background: rgba(12, 14, 30, 0.92);
   border: 1px solid var(--gold);
@@ -739,6 +768,94 @@ body.zen-active .hud-card .next-goal-box,
 body.zen-active .hud-card .rates-row {
   opacity: 0;
   pointer-events: none;
+}
+
+/* Compact / Collapsible HUD Mode (2 compact lines: energy+rates & next goal) */
+#hud-container.hud-collapsed .buffs-row,
+#hud-container.hud-collapsed .observer-card {
+  display: none !important;
+}
+
+#hud-container.hud-collapsed .hud-card {
+  padding: 8px 12px;
+}
+
+#hud-container.hud-collapsed .era-header {
+  margin-bottom: 2px;
+}
+
+#hud-container.hud-collapsed .energy-main-row {
+  display: inline-flex;
+  margin: 0 10px 0 0;
+}
+
+#hud-container.hud-collapsed .energy-value {
+  font-size: 1.18rem;
+}
+
+#hud-container.hud-collapsed .rates-row {
+  display: inline-flex;
+  gap: 8px;
+  font-size: 0.74rem;
+}
+
+#hud-container.hud-collapsed .next-goal-box {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 4px;
+}
+
+#hud-container.hud-collapsed .next-goal-header {
+  margin-bottom: 0;
+  font-size: 0.7rem;
+  white-space: nowrap;
+  gap: 6px;
+}
+
+#hud-container.hud-collapsed .progress-track {
+  flex: 1;
+  height: 5px;
+  min-width: 50px;
+}
+
+/* F3 Debug Overlay */
+.f3-debug-panel {
+  position: fixed;
+  top: 16px;
+  left: 440px;
+  z-index: 45;
+  background: rgba(6, 8, 22, 0.9);
+  border: 1px solid var(--accent-bright);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-family: var(--font-sans);
+  font-size: 0.74rem;
+  color: #e2e8f0;
+  pointer-events: none;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.65);
+  min-width: 250px;
+}
+
+.f3-debug-panel.hidden {
+  display: none !important;
+}
+
+.f3-title {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  color: var(--accent-bright);
+  margin-bottom: 6px;
+  letter-spacing: 0.04em;
+}
+
+.f3-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 2px 0;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Mobile Responsive Layout (< 900px) */

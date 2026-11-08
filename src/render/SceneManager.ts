@@ -229,6 +229,19 @@ export class SceneManager {
     this.sim.state.totalCometsSpawned += 1;
   }
 
+  public getRendererType(): string {
+    const r = this.app.renderer as any;
+    if (!r) return 'WebGL2';
+    return r.name === 'webgpu' || r.type === 2 ? 'WebGPU' : 'WebGL2';
+  }
+
+  public getEstimatedDrawCalls(): number {
+    // Sky quad + stars + constellations + back orbits + core shader + resonance ring + front orbits + effects + post-process passes
+    const profile = this.quality.getProfile();
+    const bloomPasses = profile.tier === 'high' ? 10 : profile.tier === 'medium' ? 6 : 0;
+    return 8 + bloomPasses;
+  }
+
   public update(dt: number): void {
     if (document.visibilityState === 'hidden') return;
 

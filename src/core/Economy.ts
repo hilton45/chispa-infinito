@@ -263,8 +263,8 @@ export function calculateClickPower(state: GameState, currentSPS: Decimal): Deci
     }
   }
 
-  // High eras (>= 2) and prestige layers channel cosmic production into clicks
-  if (state.currentEraIndex >= 2) {
+  // High eras (>= 1) and prestige layers channel cosmic production into clicks + era multiplier
+  if (state.currentEraIndex >= 1) {
     echoPercent += state.currentEraIndex * 0.005;
   }
   if (state.bigBangsTotal > 0) {
@@ -280,6 +280,11 @@ export function calculateClickPower(state: GameState, currentSPS: Decimal): Deci
 
   if (echoPercent > 0 && currentSPS.gt(0)) {
     baseClick = baseClick.plus(currentSPS.times(echoPercent));
+  }
+
+  // Era multiplier for click relevance in high eras (+15% compounding per cosmic era)
+  if (state.currentEraIndex > 0) {
+    baseClick = baseClick.times(Math.pow(1.15, state.currentEraIndex));
   }
 
   // Multiverse hyper universe bonus to clicks

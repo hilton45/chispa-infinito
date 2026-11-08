@@ -4,17 +4,44 @@ import { D } from '@/utils/Decimal';
 import { CONSTELLATIONS, ENCYCLOPEDIA_ENTRIES } from '@/data/extendedLayers';
 
 describe('Extended Progression Layers (Layers 2-5)', () => {
-  it('unlocks Multiverse after 10 Big Bangs or 1e15 energy and upgrades parallel universes', () => {
+  it('unlocks Multiverse and applies core bonuses for all 5 parallel universes + passive fragments', () => {
     const sim = new Simulation();
     expect(sim.isMultiverseUnlocked()).toBe(false);
 
     sim.state.bigBangsTotal = 10;
     expect(sim.isMultiverseUnlocked()).toBe(true);
 
-    sim.state.realityFragments = D(100);
-    const ok = sim.upgradeParallelUniverse('uni_dense');
-    expect(ok).toBe(true);
-    expect(sim.state.parallelUniverseAttention['uni_dense']).toBe(1);
+    sim.state.generators['atom'] = { owned: 10 };
+    sim.recalculateRates();
+    const baseSPS = sim.state.energyPerSecond;
+    const baseClick = sim.state.energyPerClick;
+
+    sim.state.realityFragments = D(1000);
+    expect(sim.upgradeParallelUniverse('uni_dense')).toBe(true);
+    expect(sim.upgradeParallelUniverse('uni_harmonic')).toBe(true);
+    expect(sim.upgradeParallelUniverse('uni_hyper')).toBe(true);
+    expect(sim.upgradeParallelUniverse('uni_cold')).toBe(true);
+    expect(sim.upgradeParallelUniverse('uni_void')).toBe(true);
+
+    // Dense + Harmonic boost SPS
+    expect(sim.state.energyPerSecond.gt(baseSPS)).toBe(true);
+    // Hyper boosts Click Power
+    expect(sim.state.energyPerClick.gt(baseClick)).toBe(true);
+
+    // Cold boosts Comet instant gain
+    sim.state.energy = D(10000);
+    const cometGain = sim.catchComet({
+      type: 'star_rain',
+      multiplier: 1,
+      duration: 0,
+      name: 'Cometa Helado',
+    });
+    expect(cometGain.instantGain?.gt(1500)).toBe(true);
+
+    // Passive Reality Fragments accumulate on tick
+    const fragsBefore = sim.state.realityFragments;
+    sim.tick(2.0);
+    expect(sim.state.realityFragments.gt(fragsBefore)).toBe(true);
   });
 
   it('completes all 4 Cosmic Challenges with core restrictions and permanent rewards', () => {
@@ -68,9 +95,23 @@ describe('Extended Progression Layers (Layers 2-5)', () => {
     expect(sim.state.unlockedConstellations.length).toBe(25);
     expect(sim.isEternityUnlocked()).toBe(true);
 
-    sim.state.aeonsCurrency = D(100);
+    sim.state.generators['atom'] = { owned: 10 };
+    sim.recalculateRates();
+    const spsBeforeClock = sim.state.energyPerSecond;
+
+    sim.state.aeonsCurrency = D(200);
     expect(sim.activateCosmicClockBoost()).toBe(true);
-    expect(sim.state.cosmicClockBoostTimer).toBeGreaterThan(0);
+    expect(sim.state.cosmicClockBoostTimer).toBe(120);
+    // Cosmic Clock doubles global production while active
+    expect(sim.state.energyPerSecond.toNumber()).toBeCloseTo(spsBeforeClock.times(2).toNumber(), 3);
+
+    // Tick past 120s expires the boost and restores rate
+    sim.tick(125);
+    expect(sim.state.cosmicClockBoostTimer).toBe(0);
+
+    // Cosmic Rewind permanently increases rewindsCount (+25% SPS per rewind)
+    expect(sim.rewindCosmicRun()).toBe(true);
+    expect(sim.state.rewindsCount).toBe(1);
 
     // Trigger New Game+ with all 4 selectable modifiers
     expect(

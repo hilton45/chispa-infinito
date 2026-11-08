@@ -71,9 +71,14 @@ export class UIManager {
   private newsTimer = 0;
   private currentNewsIndex = 0;
   private observerQuoteIndex = 0;
+  private toastQueue: Array<{ title: string; body: string }> = [];
+  private activeToastCount = 0;
+  private isF3DebugOpen = false;
 
   // DOM References
   private rootEl!: HTMLElement;
+  private f3DebugEl!: HTMLElement;
+  private tabsNavWrapperEl!: HTMLElement;
   private tutorialCoreHintEl!: HTMLElement;
   private eraBadgeEl!: HTMLElement;
   private energyValEl!: HTMLElement;
@@ -168,10 +173,18 @@ export class UIManager {
     sidePanel.id = 'side-panel';
     sidePanel.setAttribute('aria-label', 'Panel de control cósmico');
     sidePanel.innerHTML = `
-      <nav class="tabs-nav" id="tabs-nav" role="tablist"></nav>
+      <div class="tabs-nav-wrapper" id="tabs-nav-wrapper">
+        <nav class="tabs-nav" id="tabs-nav" role="tablist"></nav>
+      </div>
       <div class="panel-toolbar" id="panel-toolbar"></div>
       <div class="panel-content" id="panel-content" role="tabpanel"></div>
     `;
+
+    const f3Debug = document.createElement('div');
+    f3Debug.id = 'f3-debug-panel';
+    f3Debug.setAttribute('data-testid', 'f3-debug-panel');
+    f3Debug.className = 'f3-debug-panel hidden';
+    f3Debug.setAttribute('aria-live', 'off');
 
     const ticker = document.createElement('footer');
     ticker.id = 'news-ticker';
@@ -202,7 +215,9 @@ export class UIManager {
     this.rootEl.appendChild(toastContainer);
     this.rootEl.appendChild(eraBanner);
     this.rootEl.appendChild(tutorialCoreHint);
+    this.rootEl.appendChild(f3Debug);
     this.tutorialCoreHintEl = tutorialCoreHint;
+    this.f3DebugEl = f3Debug;
 
     // Cache DOM refs
     this.eraBadgeEl = document.getElementById('hud-era-badge')!;
@@ -216,7 +231,10 @@ export class UIManager {
     this.buffsRowEl = document.getElementById('hud-buffs-row')!;
     this.observerCardEl = document.getElementById('hud-observer-card')!;
     this.observerTextEl = document.getElementById('hud-observer-text')!;
+    this.tabsNavWrapperEl = document.getElementById('tabs-nav-wrapper')!;
     this.tabsNavEl = document.getElementById('tabs-nav')!;
+    this.tabsNavEl.addEventListener('scroll', () => this.updateTabsScrollShadows());
+    window.addEventListener('resize', () => this.updateTabsScrollShadows());
     this.panelToolbarEl = document.getElementById('panel-toolbar')!;
     this.panelContentEl = document.getElementById('panel-content')!;
     this.tickerTextEl = document.getElementById('ticker-text')!;
@@ -367,6 +385,11 @@ export class UIManager {
         this.toggleZenMode();
       } else if (e.key.toLowerCase() === 'p') {
         document.getElementById('btn-pause')?.click();
+      } else if (e.key === 'F3') {
+        e.preventDefault();
+        this.isF3DebugOpen = !this.isF3DebugOpen;
+        this.f3DebugEl.classList.toggle('hidden', !this.isF3DebugOpen);
+        this.updateF3DebugPanel();
       }
     });
   }
@@ -376,20 +399,30 @@ export class UIManager {
   }
 
   public showToast(title: string, body: string): void {
+    const maxVisible = window.innerWidth <= 900 ? 1 : 2;
+    if (this.activeToastCount >= maxVisible) {
+      if (!this.toastQueue.some((t) => t.title === title)) {
+        this.toastQueue.push({ title, body });
+      }
+      return;
+    }
+
+    this.activeToastCount += 1;
     const item = document.createElement('div');
     item.className = 'toast-item';
     item.innerHTML = `<strong>${title}</strong><span>${body}</span>`;
     this.toastContainerEl.appendChild(item);
 
-    while (this.toastContainerEl.children.length > 2) {
-      this.toastContainerEl.removeChild(this.toastContainerEl.firstChild!);
-    }
-
     setTimeout(() => {
       if (item.parentNode) {
         item.parentNode.removeChild(item);
       }
-    }, 4200);
+      this.activeToastCount = Math.max(0, this.activeToastCount - 1);
+      if (this.toastQueue.length > 0) {
+        const next = this.toastQueue.shift()!;
+        this.showToast(next.title, next.body);
+      }
+    }, 3400);
   }
 
   public showEraBanner(title: string, quote: string): void {
@@ -519,6 +552,11 @@ export class UIManager {
       });
       this.tabsNavEl.appendChild(btn);
     }
+    requestAnimationFrame(() => {
+      const activeBtn = this.tabsNavEl.querySelector<HTMLElement>('.tab-btn.active');
+      activeBtn?.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
+      this.updateTabsScrollShadows();
+    });
 
     // Toolbar for buy multipliers when on generators tab
     if (this.activeTab === 'generators') {
@@ -1580,6 +1618,39 @@ export class UIManager {
 
     this.updateHUD();
     this.updateGeneratorsLiveAffordability();
+    if (this.isF3DebugOpen) {
+      this.updateF3DebugPanel();
+    }
+  }
+
+  public updateTabsScrollShadows(): void {
+    if (!this.tabsNavEl || !this.tabsNavWrapperEl) return;
+    const { scrollLeft, scrollWidth, clientWidth } = this.tabsNavEl;
+    const hasLeft = scrollLeft > 4;
+    const hasRight = scrollLeft + clientWidth < scrollWidth - 4;
+    this.tabsNavWrapperEl.classList.toggle('has-scroll-left', hasLeft);
+    this.tabsNavWrapperEl.classList.toggle('has-scroll-right', hasRight);
+  }
+
+  public updateF3DebugPanel(): void {
+    if (!this.f3DebugEl || !this.isF3DebugOpen) return;
+    const fps = Math.max(1, this.scene.quality.currentFps);
+    const ms = 1000 / fps;
+    const tierMap: Record<string, string> = { high: 'Alta', medium: 'Media', low: 'Baja' };
+    const profile = this.scene.quality.getProfile();
+    const settingStr = this.scene.quality.setting === 'auto' ? `Auto (${tierMap[profile.tier]})` : tierMap[profile.tier];
+    const activeParticles = this.scene.effectsLayer.getActiveParticleCount();
+    const drawCalls = this.scene.getEstimatedDrawCalls();
+    const renderer = this.scene.getRendererType();
+
+    this.f3DebugEl.innerHTML = `
+      <div class="f3-title">CHISPA ∞ · Diagnóstico GPU (F3)</div>
+      <div class="f3-row"><span>FPS / Frame:</span><strong>${fps.toFixed(1)} fps (${ms.toFixed(2)} ms)</strong></div>
+      <div class="f3-row"><span>Renderizador:</span><strong>${renderer} (escala ${profile.resolutionScale}×)</strong></div>
+      <div class="f3-row"><span>Draw Calls:</span><strong>~${drawCalls} / frame</strong></div>
+      <div class="f3-row"><span>Partículas GPU:</span><strong>${activeParticles.toLocaleString()} / ${profile.maxParticles.toLocaleString()}</strong></div>
+      <div class="f3-row"><span>Calidad:</span><strong>${settingStr}</strong></div>
+    `;
   }
 
   public updateHUD(): void {

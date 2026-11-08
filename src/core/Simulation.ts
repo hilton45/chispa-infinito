@@ -532,7 +532,9 @@ export class Simulation {
     let instantGain: Decimal | undefined;
 
     const durationMult = this.state.darkMatterUpgrades?.includes('dm_comet_duration') ? 1.5 : 1.0;
-    const goldMult = this.state.darkMatterUpgrades?.includes('dm_comet_gold') ? 2.0 : 1.0;
+    const coldUniLvl = this.state.parallelUniverseAttention?.['uni_cold'] ?? 0;
+    const coldMult = 1 + coldUniLvl * 0.25;
+    const goldMult = (this.state.darkMatterUpgrades?.includes('dm_comet_gold') ? 2.0 : 1.0) * coldMult;
 
     if (effect.type === 'star_rain') {
       const bankBonus = this.state.energy.times(0.15 * goldMult);

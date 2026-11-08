@@ -5,11 +5,13 @@ import { resolve } from 'path';
 
 const EDGE_PATH = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
 const SCREENSHOT_DIR = resolve(process.cwd(), 'docs/screenshots');
+const SCREENSHOT_V11_DIR = resolve(process.cwd(), 'docs/screenshots/v1.1');
 const ARTIFACT_DIR =
   'C:\\Users\\yanca\\.gemini\\antigravity\\brain\\61bc1a90-0335-4c85-8287-b511ee9b88af';
 
 async function runE2EAndVisualVerification(): Promise<void> {
   mkdirSync(SCREENSHOT_DIR, { recursive: true });
+  mkdirSync(SCREENSHOT_V11_DIR, { recursive: true });
 
   console.log('1. Starting local Vite server...');
   const server = await createServer({
@@ -237,6 +239,31 @@ async function runE2EAndVisualVerification(): Promise<void> {
     const pathG = resolve(SCREENSHOT_DIR, 'G-movil-390x844.png');
     await page.screenshot({ path: pathG });
     copyFileSync(pathG, resolve(ARTIFACT_DIR, 'G-movil-390x844.png'));
+
+    // Copy all A-G screenshots to docs/screenshots/v1.1/
+    for (const name of [
+      'A-inicio.png',
+      'B-primer-atomo.png',
+      'C-16-orbitas.png',
+      'D-big-bang.png',
+      'E-multiverso.png',
+      'F-constelaciones.png',
+      'G-movil-390x844.png',
+    ]) {
+      copyFileSync(resolve(SCREENSHOT_DIR, name), resolve(SCREENSHOT_V11_DIR, name));
+    }
+
+    // Verify F3 debug overlay toggles cleanly
+    await page.keyboard.press('F3');
+    await page.waitForTimeout(100);
+    const f3Visible = await page.evaluate(() => {
+      const el = document.getElementById('f3-debug-panel');
+      return !!el && !el.classList.contains('hidden');
+    });
+    if (!f3Visible) {
+      throw new Error('F3 debug panel did not open on F3 key press');
+    }
+    await page.keyboard.press('F3');
 
     if (consoleErrors.length > 0) {
       throw new Error(`Console errors detected:\n${consoleErrors.join('\n')}`);

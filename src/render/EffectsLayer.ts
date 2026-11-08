@@ -85,7 +85,16 @@ export class EffectsLayer {
   }
 
   public setMaxParticles(limit: number): void {
-    this.maxActiveParticles = Math.max(100, Math.min(3000, limit));
+    this.maxActiveParticles = Math.max(100, Math.min(50000, limit));
+  }
+
+  public getActiveParticleCount(): number {
+    let count = 0;
+    const len = Math.min(this.particles.length, this.maxActiveParticles);
+    for (let i = 0; i < len; i++) {
+      if (this.particles[i].active) count++;
+    }
+    return count;
   }
 
   public spawnBurst(
