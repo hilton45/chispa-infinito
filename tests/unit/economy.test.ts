@@ -82,7 +82,7 @@ describe('Economy & Math Calculations', () => {
     expect(sps25.toNumber()).toBeCloseTo(20.0, 2);
   });
 
-  it('calculates click power and resonance combo correctly', () => {
+  it('calculates click power, resonance combo, and high-layer SPS scaling correctly', () => {
     const state = createInitialState();
     state.resonanceMultiplier = 1.0;
     const clickAt1 = calculateClickPower(state, ZERO);
@@ -92,6 +92,15 @@ describe('Economy & Math Calculations', () => {
     state.resonanceMultiplier = 3.0;
     const clickAt3 = calculateClickPower(state, ZERO);
     expect(clickAt3.toNumber()).toBe(3.0);
+
+    // Click upgrades + high layer SPS scaling
+    state.resonanceMultiplier = 1.0;
+    state.upgradesPurchased = ['click_1', 'click_2']; // 2 click upgrades -> x4 base + 2% of SPS
+    state.bigBangsTotal = 5; // +5% of SPS
+    state.currentEraIndex = 6; // +3% of SPS -> total 10% of SPS
+    const sps = D(1e12);
+    const scaledClick = calculateClickPower(state, sps);
+    expect(scaledClick.gt(D(5e10))).toBe(true);
   });
 
   it('calculates offline progress with efficiency and 8h cap', () => {

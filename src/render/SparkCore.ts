@@ -61,29 +61,23 @@ const SPARK_FRAG = `
       accent = vec3(0.65, 0.25, 1.0);
     }
 
-    // Evolution visual nuance (pulsar / black hole / singularity rings)
+    // Evolution visual nuance (subtle harmonic outer halo rings in advanced eras)
     float ringHighlight = 0.0;
     if (uEvolutionStage >= 2.0) {
-      ringHighlight = smoothstep(0.03, 0.0, abs(d - 0.35)) * 0.8;
+      ringHighlight = smoothstep(0.025, 0.0, abs(d - 0.38)) * 0.55;
     }
 
-    vec3 col = accent * (corona * 0.85 + rays * 0.55 + ringHighlight);
+    vec3 col = accent * (corona * 0.95 + rays * 0.65 + ringHighlight);
 
-    // If black hole stage (stage 3) or void skin (4), dark inner core with bright photon ring
-    if (uSkinMode == 4.0 || (uEvolutionStage >= 3.0 && uEvolutionStage < 4.0)) {
-      float photonRing = smoothstep(0.04, 0.0, abs(d - 0.31)) * 2.2;
-      col += vec3(1.0, 0.92, 0.8) * photonRing;
-      col = mix(col, vec3(0.02, 0.01, 0.05), smoothstep(0.30, 0.25, d));
-    } else {
-      // White-hot incandescent core
-      col = mix(col, vec3(1.0, 1.0, 1.0), body);
-    }
+    // Core body: smoothstep(0.34, 0.30, d) in pure white across all 16 eras (Section 4B)
+    float whiteBody = smoothstep(0.34, 0.30, d);
+    col = mix(col, vec3(1.0, 1.0, 1.0), whiteBody);
 
     // Smooth circular falloff at outer quad boundary so no hard square edge ever shows
     float edgeFade = smoothstep(1.0, 0.65, length(p));
     col *= edgeFade;
 
-    float alpha = clamp((corona * 0.6 + rays * 0.4 + body) * edgeFade, 0.0, 1.0);
+    float alpha = clamp((corona * 0.65 + rays * 0.45 + whiteBody) * edgeFade, 0.0, 1.0);
     finalColor = vec4(col, alpha);
   }
 `;
@@ -152,10 +146,12 @@ export class SparkCore {
     if (this.kick < 0.001) this.kick = 0;
 
     // Core radius grows with log10(totalEnergy) between 7.5% and 12.5% of minSide
+    // Ensure on mobile (< 500px minSide) the core + corona occupies >= 25% of width
     const logE = totalEnergy.gt(1) ? Math.max(0, Decimal.log10(totalEnergy)) : 0;
     const growthFactor = Math.min(1, logE / 35); // reaches max size around 1e35
-    const pct = 0.075 + growthFactor * 0.05; // 7.5% to 12.5%
-    const visualRadius = Math.max(42, minSceneSide * pct);
+    const pct = 0.085 + growthFactor * 0.045; // 8.5% to 13.0% radius (17% to 26% diameter of body, >35% with corona)
+    const minPxRadius = minSceneSide < 500 ? minSceneSide * 0.145 : 48;
+    const visualRadius = Math.max(minPxRadius, minSceneSide * pct);
     this.currentRadius = visualRadius;
 
     // Mesh quad is 2.6x visualRadius so the corona and rays have plenty of room to fade
@@ -191,21 +187,22 @@ export class SparkCore {
     uniforms.uEvolutionStage = evolutionStage;
     uniforms.uSkinMode = skinMode;
 
-    // Draw Resonance Ring around the core
+    // Draw Resonance Ring around the core (always visible track + active combo arc)
     const rg = this.resonanceGraphics;
     rg.clear();
 
+    const ringRadius = visualRadius * 1.16 + this.kick * 22;
+    const trackColor = hslToHexNumber(currentHue, 90, 65);
+
+    // Base Resonance ring track (always visible around the core)
+    rg.circle(0, 0, ringRadius).stroke({
+      width: 2.2,
+      color: trackColor,
+      alpha: resonanceCombo > 0 ? 0.28 : 0.22,
+    });
+
     if (resonanceCombo > 0) {
       const ratio = Math.min(1, resonanceCombo / maxResonanceCombo);
-      const ringRadius = visualRadius * 1.18 + this.kick * 25;
-
-      // Subtle track circle
-      rg.circle(0, 0, ringRadius).stroke({
-        width: 2,
-        color: 0xffffff,
-        alpha: 0.12,
-      });
-
       const startAngle = -Math.PI / 2;
       const endAngle = startAngle + ratio * Math.PI * 2;
 
@@ -217,6 +214,7 @@ export class SparkCore {
           const a1 = ((i + 0.85) / segments) * Math.PI * 2 + elapsedSeconds * 2.0;
           const segHue = (i / segments) * 360;
           const segColor = hslToHexNumber(segHue, 100, 65);
+          rg.moveTo(Math.cos(a0) * ringRadius, Math.sin(a0) * ringRadius);
           rg.arc(0, 0, ringRadius, a0, a1).stroke({
             width: 4.5,
             color: segColor,
@@ -224,11 +222,12 @@ export class SparkCore {
           });
         }
       } else {
-        const ringColor = hslToHexNumber(currentHue, 100, 68);
+        const ringColor = hslToHexNumber(currentHue, 100, 70);
+        rg.moveTo(Math.cos(startAngle) * ringRadius, Math.sin(startAngle) * ringRadius);
         rg.arc(0, 0, ringRadius, startAngle, endAngle).stroke({
-          width: 3.5,
+          width: 4.0,
           color: ringColor,
-          alpha: 0.88,
+          alpha: 0.92,
         });
       }
     }

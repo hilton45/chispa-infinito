@@ -19,6 +19,7 @@ import { DARK_MATTER_NODES } from '@/data/darkMatterTree';
 import {
   PARALLEL_UNIVERSES,
   COSMIC_CHALLENGES,
+  NEW_GAME_PLUS_MODIFIERS,
   CONSTELLATIONS,
   OBSERVER_QUOTES,
   ENCYCLOPEDIA_ENTRIES,
@@ -132,6 +133,7 @@ export class UIManager {
             <button class="icon-btn" id="btn-daily-streak" title="Recompensa de racha diaria" aria-label="Racha diaria">☀</button>
             <button class="icon-btn" id="btn-zen-mode" title="${t('zen_mode')} (Z)" aria-label="${t('zen_mode')}">✧ Zen</button>
             <button class="icon-btn" id="btn-pause" title="${t('pause_btn')} (P)" aria-label="${t('pause_btn')}">⏸</button>
+            <button class="icon-btn" id="btn-collapse-hud" data-testid="btn-collapse-hud" title="Plegar o desplegar detalles del HUD" aria-label="Plegar HUD">▴</button>
           </div>
         </div>
         <div class="energy-main-row">
@@ -224,6 +226,21 @@ export class UIManager {
     this.eraBannerQuoteEl = document.getElementById('era-banner-quote')!;
 
     // Quick Action Listeners
+    const collapseHudBtn = document.getElementById('btn-collapse-hud')!;
+    const syncMobileHudCollapse = () => {
+      if (window.innerWidth <= 900) {
+        hud.classList.add('hud-collapsed');
+        collapseHudBtn.textContent = '▾';
+      }
+    };
+    syncMobileHudCollapse();
+    window.addEventListener('resize', syncMobileHudCollapse);
+
+    collapseHudBtn.addEventListener('click', () => {
+      const collapsed = hud.classList.toggle('hud-collapsed');
+      collapseHudBtn.textContent = collapsed ? '▾' : '▴';
+    });
+
     document.getElementById('btn-zen-mode')!.addEventListener('click', () => {
       this.toggleZenMode();
     });
@@ -364,7 +381,7 @@ export class UIManager {
     item.innerHTML = `<strong>${title}</strong><span>${body}</span>`;
     this.toastContainerEl.appendChild(item);
 
-    while (this.toastContainerEl.children.length > 4) {
+    while (this.toastContainerEl.children.length > 2) {
       this.toastContainerEl.removeChild(this.toastContainerEl.firstChild!);
     }
 
@@ -1067,11 +1084,43 @@ export class UIManager {
         this.audio.playBigBang();
         this.showToast(
           `¡Nueva Partida+ ${s.newGamePlusCount}!`,
-          'Has reescrito la Primera Chispa. Multiplicador eterno ×3 aplicado.'
+          'Has reescrito la Primera Chispa con tus modificadores elegidos.'
         );
         this.renderEternityTab();
       }
     });
+
+    // Selectable New Game+ Modifiers
+    const modBox = document.createElement('div');
+    modBox.className = 'section-box';
+    modBox.innerHTML = `
+      <div class="section-title">Modificadores Elegibles · Nueva Partida+</div>
+      <p style="font-size: 0.76rem; color: var(--text-muted); margin-bottom: 8px;">
+        Elige qué leyes primordiales permanecen activas al reescribir la Primera Chispa:
+      </p>
+    `;
+    this.panelContentEl.appendChild(modBox);
+
+    for (const mod of NEW_GAME_PLUS_MODIFIERS) {
+      const active = s.ngPlusModifiers?.includes(mod.id) ?? false;
+      const btn = document.createElement('button');
+      btn.className = `gen-card ${active ? 'affordable' : ''}`;
+      btn.dataset.testid = `ngplus-mod-${mod.id}`;
+      btn.innerHTML = `
+        <div class="gen-top-row">
+          <span class="gen-title">${mod.name}</span>
+          <span class="gen-cost">${active ? '★ Activo' : 'Activar'}</span>
+        </div>
+        <div class="gen-desc">${mod.description}</div>
+      `;
+      btn.addEventListener('click', () => {
+        this.sim.toggleNgPlusModifier(mod.id);
+        this.audio.playBuyUpgrade();
+        this.renderEternityTab();
+        this.updateHUD();
+      });
+      this.panelContentEl.appendChild(btn);
+    }
   }
 
   private renderAchievementsTab(): void {
@@ -1452,60 +1501,66 @@ export class UIManager {
     `;
     this.panelContentEl.appendChild(statsBox);
 
-    // Developer Debug Tools (Section 7.16)
-    const debugBox = document.createElement('div');
-    debugBox.className = 'section-box';
-    debugBox.innerHTML = `
-      <div class="section-title">Herramientas de Depuración (Dev)</div>
-      <div style="display: flex; flex-wrap: wrap; gap: 6px;">
-        <button class="buy-mode-btn" id="dbg-speed-1">×1</button>
-        <button class="buy-mode-btn" id="dbg-speed-10">×10 Tiempo</button>
-        <button class="buy-mode-btn" id="dbg-speed-100">×100 Tiempo</button>
-        <button class="buy-mode-btn" id="dbg-give-energy" data-testid="dbg-give-energy">+Energía ×100</button>
-        <button class="buy-mode-btn" id="dbg-spawn-comet">Forzar Cometa</button>
-        <button class="buy-mode-btn" id="dbg-next-era">Saltar Era</button>
-        <button class="buy-mode-btn" id="dbg-unlock-all" data-testid="dbg-unlock-all">Abrir 5 Capas</button>
-      </div>
-    `;
-    this.panelContentEl.appendChild(debugBox);
+    // Developer Debug Tools (Section 7.16: ONLY in development or with ?debug=1)
+    const isDevMode =
+      Boolean((import.meta as any).env?.DEV) ||
+      (typeof window !== 'undefined' && window.location.search.includes('debug=1'));
 
-    document.getElementById('dbg-speed-1')?.addEventListener('click', () => (this.timeScale = 1));
-    document.getElementById('dbg-speed-10')?.addEventListener('click', () => (this.timeScale = 10));
-    document.getElementById('dbg-speed-100')?.addEventListener('click', () => (this.timeScale = 100));
-    document.getElementById('dbg-give-energy')?.addEventListener('click', () => {
-      const boost = Decimal.max(D(1e7), s.energy.times(100));
-      s.energy = s.energy.plus(boost);
-      s.totalEnergyProduced = s.totalEnergyProduced.plus(boost);
-      s.allTimeEnergyProduced = s.allTimeEnergyProduced.plus(boost);
-      this.sim.checkEraProgression();
-      this.sim.checkAchievements();
-      this.updateHUD();
-      this.renderTabsNav();
-    });
-    document.getElementById('dbg-spawn-comet')?.addEventListener('click', () => {
-      this.scene.forceSpawnComet();
-    });
-    document.getElementById('dbg-next-era')?.addEventListener('click', () => {
-      const nextIdx = Math.min(ERAS.length - 1, s.currentEraIndex + 1);
-      const nextEra = ERAS[nextIdx];
-      s.energy = Decimal.max(s.energy, nextEra.energyThreshold);
-      s.totalEnergyProduced = Decimal.max(s.totalEnergyProduced, nextEra.energyThreshold);
-      this.sim.checkEraProgression();
-      this.updateHUD();
-    });
-    document.getElementById('dbg-unlock-all')?.addEventListener('click', () => {
-      s.bigBangsTotal = Math.max(s.bigBangsTotal, 25);
-      s.darkMatter = s.darkMatter.plus(500);
-      s.darkMatterTotal = s.darkMatterTotal.plus(500);
-      s.realityFragments = s.realityFragments.plus(1000);
-      s.parallelUniverseAttention['uni_dense'] = 3;
-      s.attentionCurrency = s.attentionCurrency.plus(5000);
-      s.aeonsCurrency = s.aeonsCurrency.plus(250);
-      this.sim.recalculateRates();
-      this.renderTabsNav();
-      this.renderSettingsTab();
-      this.updateHUD();
-    });
+    if (isDevMode) {
+      const debugBox = document.createElement('div');
+      debugBox.className = 'section-box';
+      debugBox.innerHTML = `
+        <div class="section-title">Herramientas de Depuración (Dev)</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+          <button class="buy-mode-btn" id="dbg-speed-1">×1</button>
+          <button class="buy-mode-btn" id="dbg-speed-10">×10 Tiempo</button>
+          <button class="buy-mode-btn" id="dbg-speed-100">×100 Tiempo</button>
+          <button class="buy-mode-btn" id="dbg-give-energy" data-testid="dbg-give-energy">+Energía ×100</button>
+          <button class="buy-mode-btn" id="dbg-spawn-comet">Forzar Cometa</button>
+          <button class="buy-mode-btn" id="dbg-next-era">Saltar Era</button>
+          <button class="buy-mode-btn" id="dbg-unlock-all" data-testid="dbg-unlock-all">Abrir 5 Capas</button>
+        </div>
+      `;
+      this.panelContentEl.appendChild(debugBox);
+
+      document.getElementById('dbg-speed-1')?.addEventListener('click', () => (this.timeScale = 1));
+      document.getElementById('dbg-speed-10')?.addEventListener('click', () => (this.timeScale = 10));
+      document.getElementById('dbg-speed-100')?.addEventListener('click', () => (this.timeScale = 100));
+      document.getElementById('dbg-give-energy')?.addEventListener('click', () => {
+        const boost = Decimal.max(D(1e7), s.energy.times(100));
+        s.energy = s.energy.plus(boost);
+        s.totalEnergyProduced = s.totalEnergyProduced.plus(boost);
+        s.allTimeEnergyProduced = s.allTimeEnergyProduced.plus(boost);
+        this.sim.checkEraProgression();
+        this.sim.checkAchievements();
+        this.updateHUD();
+        this.renderTabsNav();
+      });
+      document.getElementById('dbg-spawn-comet')?.addEventListener('click', () => {
+        this.scene.forceSpawnComet();
+      });
+      document.getElementById('dbg-next-era')?.addEventListener('click', () => {
+        const nextIdx = Math.min(ERAS.length - 1, s.currentEraIndex + 1);
+        const nextEra = ERAS[nextIdx];
+        s.energy = Decimal.max(s.energy, nextEra.energyThreshold);
+        s.totalEnergyProduced = Decimal.max(s.totalEnergyProduced, nextEra.energyThreshold);
+        this.sim.checkEraProgression();
+        this.updateHUD();
+      });
+      document.getElementById('dbg-unlock-all')?.addEventListener('click', () => {
+        s.bigBangsTotal = Math.max(s.bigBangsTotal, 25);
+        s.darkMatter = s.darkMatter.plus(500);
+        s.darkMatterTotal = s.darkMatterTotal.plus(500);
+        s.realityFragments = s.realityFragments.plus(1000);
+        s.parallelUniverseAttention['uni_dense'] = 3;
+        s.attentionCurrency = s.attentionCurrency.plus(5000);
+        s.aeonsCurrency = s.aeonsCurrency.plus(250);
+        this.sim.recalculateRates();
+        this.renderTabsNav();
+        this.renderSettingsTab();
+        this.updateHUD();
+      });
+    }
   }
 
   public update(dt: number): void {

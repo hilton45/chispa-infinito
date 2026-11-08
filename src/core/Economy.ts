@@ -33,6 +33,10 @@ export function getEffectiveCostModifiers(
   if (state.darkMatterUpgrades?.includes('dm_cosmic_geometry')) {
     effectiveRatio = 1.14;
   }
+  if (state.ngPlusModifiers?.includes('ng_hyper_gravity')) {
+    effectiveBase = effectiveBase.times(0.8);
+    effectiveRatio -= 0.005;
+  }
 
   return { effectiveBase, effectiveRatio };
 }
@@ -121,10 +125,13 @@ export function calculateGeneratorSPS(
   // 1. Base production
   let sps = gen.baseProduction.times(owned);
 
-  // 2. Milestones multiplier: x2 per milestone reached (or x2.15 with chal_stellar_only)
+  // 2. Milestones multiplier: x2 per milestone reached (or x2.15 with chal_stellar_only, x2.25 with ng_harmonic_milestones)
   const milestones = getMilestoneCount(owned);
   if (milestones > 0) {
-    const milestoneBase = state.completedChallenges?.includes('chal_stellar_only') ? 2.15 : 2.0;
+    let milestoneBase = state.completedChallenges?.includes('chal_stellar_only') ? 2.15 : 2.0;
+    if (state.ngPlusModifiers?.includes('ng_harmonic_milestones')) {
+      milestoneBase = Math.max(milestoneBase, 2.25);
+    }
     sps = sps.times(Math.pow(milestoneBase, milestones));
   }
 
@@ -237,21 +244,34 @@ export function calculateClickPower(state: GameState, currentSPS: Decimal): Deci
   // 1. Base click power (default 1, or 10 if dm_click_base unlocked)
   let baseClick = state.darkMatterUpgrades?.includes('dm_click_base') ? D(10) : D(1);
 
-  // 2. Click upgrades: x2 each
+  // 2. Click upgrades: x2 each, plus +1% SPS scaling per click upgrade
+  let clickUpgradesCount = 0;
   for (const upId of state.upgradesPurchased) {
     const upDef = UPGRADES.find((u) => u.id === upId);
     if (upDef && upDef.type === 'click' && upDef.multiplier) {
       baseClick = baseClick.times(upDef.multiplier);
+      clickUpgradesCount += 1;
     }
   }
 
-  // 3. Echo upgrades: adds % of current SPS to click
-  let echoPercent = 0;
+  // 3. Echo upgrades & high-layer production scaling: adds % of current SPS to click
+  let echoPercent = clickUpgradesCount * 0.01;
   for (const upId of state.upgradesPurchased) {
     const upDef = UPGRADES.find((u) => u.id === upId);
     if (upDef && upDef.type === 'echo' && upDef.echoPercent) {
       echoPercent += upDef.echoPercent;
     }
+  }
+
+  // High eras (>= 2) and prestige layers channel cosmic production into clicks
+  if (state.currentEraIndex >= 2) {
+    echoPercent += state.currentEraIndex * 0.005;
+  }
+  if (state.bigBangsTotal > 0) {
+    echoPercent += Math.min(0.25, state.bigBangsTotal * 0.01);
+  }
+  if (state.ngPlusModifiers?.includes('ng_stellar_echo')) {
+    echoPercent += 0.05;
   }
 
   if (state.darkMatterUpgrades?.includes('dm_echo_master')) {
@@ -310,6 +330,9 @@ export function calculateBigBangDarkMatter(runEnergy: Decimal, state?: GameState
   const voidLvl = state?.parallelUniverseAttention?.['uni_void'] ?? 0;
   if (voidLvl > 0) {
     dm = Decimal.floor(dm.times(1 + voidLvl * 0.5));
+  }
+  if (state?.ngPlusModifiers?.includes('ng_dark_abundance')) {
+    dm = dm.times(2);
   }
   return dm;
 }

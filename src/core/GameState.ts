@@ -57,6 +57,7 @@ export interface GameState {
   cosmicClockBoostTimer: number;
   rewindsCount: number;
   newGamePlusCount: number;
+  ngPlusModifiers: string[];
 
   // Automation & Daily Streak
   automationEnabled: boolean;
@@ -142,6 +143,7 @@ export function createInitialState(): GameState {
     cosmicClockBoostTimer: 0,
     rewindsCount: 0,
     newGamePlusCount: 0,
+    ngPlusModifiers: [],
 
     automationEnabled: true,
     autoBigBangThreshold: 0,

@@ -114,8 +114,8 @@ export class SceneManager {
     // On desktop (> 900px width), shift center slightly left so the right glass panel doesn't cover orbits
     const isDesktop = w > 900;
     const cx = isDesktop ? w * 0.36 : w * 0.5;
-    const cy = isDesktop ? h * 0.5 : h * 0.41;
-    const minSide = Math.min(isDesktop ? w * 0.72 : w * 0.82, isDesktop ? h : h * 0.52);
+    const cy = isDesktop ? h * 0.5 : h * 0.36;
+    const minSide = Math.min(isDesktop ? w * 0.72 : w * 0.92, isDesktop ? h : h * 0.56);
     return { cx, cy, minSide };
   }
 

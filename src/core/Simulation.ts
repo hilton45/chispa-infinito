@@ -440,8 +440,27 @@ export class Simulation {
     return true;
   }
 
-  public triggerNewGamePlus(): boolean {
+  public toggleNgPlusModifier(modId: string): boolean {
+    if (!this.state.ngPlusModifiers) {
+      this.state.ngPlusModifiers = [];
+    }
+    const idx = this.state.ngPlusModifiers.indexOf(modId);
+    if (idx >= 0) {
+      this.state.ngPlusModifiers.splice(idx, 1);
+      this.recalculateRates();
+      return false;
+    } else {
+      this.state.ngPlusModifiers.push(modId);
+      this.recalculateRates();
+      return true;
+    }
+  }
+
+  public triggerNewGamePlus(selectedModifiers?: string[]): boolean {
     if (!this.isEternityUnlocked()) return false;
+    if (selectedModifiers) {
+      this.state.ngPlusModifiers = [...selectedModifiers];
+    }
     this.state.newGamePlusCount += 1;
     this.triggerBigBang(true);
     this.recalculateRates();

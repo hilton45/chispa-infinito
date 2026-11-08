@@ -24,6 +24,7 @@ async function runE2EAndVisualVerification(): Promise<void> {
   const browser = await chromium.launch({
     executablePath: EDGE_PATH,
     headless: true,
+    ignoreDefaultArgs: ['--hide-scrollbars'],
   });
 
   const consoleErrors: string[] = [];
@@ -81,6 +82,10 @@ async function runE2EAndVisualVerification(): Promise<void> {
       app.sim.state.totalEnergyProduced = new D('1e22');
       app.sim.state.allTimeEnergyProduced = new D('1e22');
       app.sim.state.currentEraIndex = 10; // Era de las Dimensiones Extra (280° violet-magenta)
+      app.sim.state.upgradesPurchased = ['click_1', 'click_2', 'click_3', 'echo_1'];
+      app.sim.state.resonanceCombo = 22;
+      app.sim.state.resonanceMultiplier = 2.47;
+      app.sim.state.resonanceTimer = -10;
 
       for (const id of Object.keys(app.sim.state.generators)) {
         app.sim.state.generators[id].owned = 14;
@@ -111,6 +116,9 @@ async function runE2EAndVisualVerification(): Promise<void> {
       const D = app.sim.state.energy.constructor;
       app.sim.state.totalEnergyProduced = new D('1e18'); // Era de la Singularidad (330° crimson-rose)
       app.sim.state.currentEraIndex = 8;
+      app.sim.state.resonanceCombo = 26;
+      app.sim.state.resonanceMultiplier = 2.73;
+      app.sim.state.resonanceTimer = -10;
       app.sim.recalculateRates();
       app.scene.snapToCurrentEraHue();
     });
@@ -139,6 +147,10 @@ async function runE2EAndVisualVerification(): Promise<void> {
       app.sim.state.energy = new D('1.2e14');
       app.sim.state.totalEnergyProduced = new D('1.2e14'); // Era del Multiverso (265° indigo-violet)
       app.sim.state.realityFragments = new D(450);
+      app.sim.state.upgradesPurchased = ['click_1', 'click_2', 'echo_1'];
+      app.sim.state.resonanceCombo = 18;
+      app.sim.state.resonanceMultiplier = 2.2;
+      app.sim.state.resonanceTimer = -10;
       app.sim.state.parallelUniverseAttention = {
         uni_dense: 3,
         uni_cold: 2,
@@ -171,6 +183,9 @@ async function runE2EAndVisualVerification(): Promise<void> {
       app.sim.state.energy = new D('1.5e16');
       app.sim.state.totalEnergyProduced = new D('1.5e16'); // Era de la Conciencia (175° emerald-teal)
       app.sim.state.attentionCurrency = new D(2500);
+      app.sim.state.resonanceCombo = 30;
+      app.sim.state.resonanceMultiplier = 3.0;
+      app.sim.state.resonanceTimer = -10;
       app.sim.state.unlockedConstellations = [
         'const_1',
         'const_2',
@@ -201,8 +216,13 @@ async function runE2EAndVisualVerification(): Promise<void> {
     console.log('9. Verifying Mobile Responsive Layout at 390x844...');
     await page.setViewportSize({ width: 390, height: 844 });
     await page.evaluate(() => {
+      const app = (window as any).__CHISPA__;
+      app.sim.state.resonanceCombo = 24;
+      app.sim.state.resonanceMultiplier = 2.6;
+      app.sim.state.resonanceTimer = -10;
       const toasts = document.getElementById('toast-container');
       if (toasts) toasts.innerHTML = '';
+      document.getElementById('hud-container')?.classList.add('hud-collapsed');
     });
     await page.click('[data-tab="generators"]');
     await page.waitForTimeout(500);

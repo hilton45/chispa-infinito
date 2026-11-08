@@ -127,6 +127,35 @@ export const COSMIC_CHALLENGES: CosmicChallengeDef[] = [
   },
 ];
 
+export interface NewGamePlusModifierDef {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export const NEW_GAME_PLUS_MODIFIERS: NewGamePlusModifierDef[] = [
+  {
+    id: 'ng_hyper_gravity',
+    name: 'Gravedad Primordial',
+    description: 'Coste base de todos los generadores -20% adicional y curva de crecimiento -0.005.',
+  },
+  {
+    id: 'ng_stellar_echo',
+    name: 'Eco de la Primera Chispa',
+    description: 'Cada clic suma un +5% adicional de tu producción por segundo desde el inicio.',
+  },
+  {
+    id: 'ng_harmonic_milestones',
+    name: 'Sinfonía de Hitos',
+    description: 'Cada hito de generador multiplica por ×2.25 en lugar de ×2.0.',
+  },
+  {
+    id: 'ng_dark_abundance',
+    name: 'Abundancia Oscura',
+    description: 'Duplica (×2) toda la Materia Oscura cristalizada en cada Big Bang.',
+  },
+];
+
 export interface ConstellationDef {
   id: string;
   index: number;
