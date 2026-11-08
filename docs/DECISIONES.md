@@ -103,3 +103,11 @@ Este documento registra todas las decisiones arquitectónicas, de diseño y de b
 - **Decisión:**
   - Ampliar la secuencia cinemática del Big Bang a `6,0 s` con pivote de cámara centrado en el núcleo (`worldContainer.pivot`), zoom progresivo hasta `1.38×`, contracción orbital y de las `50.000` partículas hacia la singularidad, ventana de **cámara lenta (`sceneTimeScale = 0.3` durante `1,5 s`)**, sobreexposición con *god rays*, **distorsión de onda de choque en espacio de pantalla** (`triggerShockwaveDistortion`), destello HDR y renacimiento con retroceso suave de cámara.
   - Enriquecer los cambios de era (pulso de bloom + distorsión radial + transición de color de `3,0 s`) y los hitos/cometas (estela de partículas GPU, destello de lente anamórfico en cruz y sacudida suave de cámara que respeta `prefers-reduced-motion`).
+
+---
+
+## ADR 011 · Fase G7 (v1.1): Benchmarking Desacoplado de VSync con CPU Throttling CDP y Entrega v1.1.0
+- **Fecha:** Fase G7 (`v1.1.0`)
+- **Estado:** Aprobado
+- **Decisión:**
+  - Crear `scripts/benchmark-g7.ts` utilizando el protocolo Chrome DevTools (`Emulation.setCPUThrottlingRate`) para medir tanto el FPS real con VSync como el **trabajo activo de CPU+WebGL por fotograma (`workAvgMs` y `workP95Ms`)** en los 3 escenarios (escritorio normal, escritorio con CPU ×4 y emulación móvil `390×844` con CPU ×4) y en las 3 calidades (Alta, Media y Baja), registrando las cifras exactas sin redondear en `docs/RENDIMIENTO.md`.
